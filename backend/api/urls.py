@@ -7,6 +7,7 @@ from .views import (
     EquipmentViewSet,
     CSVUploadView,
     health_check,
+    download_dataset_pdf,
 )
 
 # Create router for ViewSets
@@ -25,6 +26,9 @@ urlpatterns = [
     # CSV Upload
     path('upload/', CSVUploadView.as_view(), name='csv-upload'),
     
+    # PDF Download 
+    path('datasets/<uuid:dataset_id>/pdf/', download_dataset_pdf, name='dataset-pdf'),
+
     # Router URLs (datasets, equipment)
     path('', include(router.urls)),
 ]

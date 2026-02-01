@@ -1,3 +1,4 @@
+from django.http import FileResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -14,7 +15,7 @@ from .serializers import (
     AnalyticsSerializer,
 )
 from .utils import process_csv_and_create_dataset, get_analytics_for_dataset
-
+from .pdf_generator import generate_dataset_pdf
 
 class DatasetViewSet(viewsets.ModelViewSet):
     """
@@ -120,3 +121,34 @@ def health_check(request):
         'message': 'Chemical Equipment Parameter Visualizer API is running',
         'version': '1.0.0'
     })
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def download_dataset_pdf(request, dataset_id):
+    """Download PDF report for a dataset."""
+    try:
+        pdf_buffer = generate_dataset_pdf(dataset_id)
+        
+        # Get dataset filename
+        dataset = Dataset.objects.get(id=dataset_id)
+        filename = f"report_{dataset.filename.replace('.csv', '')}.pdf"
+        
+        response = FileResponse(
+            pdf_buffer,
+            content_type='application/pdf',
+            as_attachment=True,
+            filename=filename
+        )
+        
+        return response
+    
+    except Dataset.DoesNotExist:
+        return Response(
+            {'error': 'Dataset not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    except Exception as e:
+        return Response(
+            {'error': f'PDF generation failed: {str(e)}'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
