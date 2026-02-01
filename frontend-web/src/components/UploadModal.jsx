@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { datasetAPI } from '../services/api';
+import PropTypes from 'prop-types';
 
 export default function UploadModal({ isOpen, onClose, onSuccess }) {
   const [file, setFile] = useState(null);
@@ -21,7 +22,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFile(e.dataTransfer.files[0]);
     }
@@ -53,12 +54,10 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const response = await datasetAPI.upload(file);
-      console.log('Upload successful:', response.data);
       onSuccess(response.data.dataset);
       setFile(null);
       onClose();
     } catch (err) {
-      console.error('Upload failed:', err);
       setError(err.response?.data?.error || 'Upload failed');
     } finally {
       setUploading(false);
@@ -74,9 +73,8 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
 
         {/* Drag & Drop Area */}
         <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition ${
-            dragActive ? 'border-primary bg-blue-50' : 'border-gray-300'
-          }`}
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition ${dragActive ? 'border-primary bg-blue-50' : 'border-gray-300'
+            }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
@@ -118,7 +116,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
               <svg className="h-5 w-5 text-green-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
               </svg>
-              <span className="text-sm text-gray-700">{file.name}</span>
+              <span className="text-sm text-gray-700 truncate max-w-[200px]">{file.name}</span>
             </div>
             <button
               onClick={() => setFile(null)}
@@ -165,3 +163,10 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
     </div>
   );
 }
+
+// Prop Types Validation
+UploadModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func.isRequired,
+};

@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { datasetAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import UploadModal from '../components/UploadModal';
+import { DatasetListSkeleton } from '../components/LoadingSkeleton';
+import DatasetCard from '../components/DatasetCard';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -20,17 +22,15 @@ export default function Dashboard() {
     setLoading(true);
     setError(null);
     try {
-      console.log('Fetching datasets...');
       const response = await datasetAPI.getAll();
-      console.log('Datasets loaded:', response.data);
       setDatasets(response.data.results || response.data);
     } catch (error) {
-      console.error('Failed to load datasets:', error);
       setError(error.response?.data?.detail || error.message || 'Failed to load datasets');
     } finally {
       setLoading(false);
     }
   };
+
   const handleDownloadPDF = async (datasetId, filename) => {
     try {
       const response = await datasetAPI.downloadPDF(datasetId);
@@ -43,7 +43,6 @@ export default function Dashboard() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to download PDF:', error);
       alert('Failed to download PDF. Please try again.');
     }
   };
@@ -81,12 +80,7 @@ export default function Dashboard() {
         </div>
 
         {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <p className="mt-4 text-gray-600">Loading datasets...</p>
-          </div>
-        )}
+        {loading && <DatasetListSkeleton />}
 
         {/* Error State */}
         {error && (
@@ -104,7 +98,10 @@ export default function Dashboard() {
             </svg>
             <h3 className="mt-2 text-lg font-medium text-gray-900">No datasets</h3>
             <p className="mt-1 text-gray-500">Get started by uploading a CSV file.</p>
-            <button className="mt-6 bg-primary text-white px-6 py-2 rounded hover:bg-blue-800 transition">
+            <button
+              onClick={() => setUploadModalOpen(true)}
+              className="mt-6 bg-primary text-white px-6 py-2 rounded hover:bg-blue-800 transition"
+            >
               Upload First Dataset
             </button>
           </div>
@@ -114,49 +111,15 @@ export default function Dashboard() {
         {!loading && !error && datasets.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {datasets.map((dataset) => (
-              <div key={dataset.id} className="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-lg text-gray-900 mb-2">
-                      {dataset.filename}
-                    </h3>
-                    <div className="space-y-1 text-sm text-gray-600">
-                      <p>
-                        <span className="font-semibold">Equipment:</span> {dataset.total_equipment || dataset.equipment_count}
-                      </p>
-                      <p>
-                        <span className="font-semibold">Uploaded:</span>{' '}
-                        {new Date(dataset.uploaded_at).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
-                  <button onClick={() => navigate(`/dataset/${dataset.id}`)} className="flex-1 bg-blue-100 text-primary px-3 py-2 rounded text-sm font-medium hover:bg-blue-200 transition">
-                    View Details
-                  </button>
-                  <button onClick={() => handleDownloadPDF(dataset.id, dataset.filename)} className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm font-medium hover:bg-green-200 transition">
-                    Download PDF
-                  </button>
-                </div>
-              </div>
+              <DatasetCard
+                key={dataset.id}
+                dataset={dataset}
+                onViewDetails={(id) => navigate(`/dataset/${id}`)}
+                onDownloadPDF={handleDownloadPDF}
+              />
             ))}
           </div>
         )}
-
-        {/* Debug Info (remove in production) */}
-        <div className="mt-8 p-4 bg-gray-800 text-white rounded text-xs font-mono">
-          <p><strong>Debug Info:</strong></p>
-          <p>Loading: {loading.toString()}</p>
-          <p>Error: {error || 'None'}</p>
-          <p>Datasets count: {datasets.length}</p>
-          <p>User: {user?.username}</p>
-        </div>
       </main>
 
       {/* Upload Modal */}

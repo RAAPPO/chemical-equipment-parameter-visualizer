@@ -10,7 +10,7 @@ const api = axios.create({
   },
 });
 
-// Add auth token to requests
+// Request interceptor - Add auth token
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
@@ -22,12 +22,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Refresh token on 401
+// Response interceptor - Refresh token on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
+    // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -37,11 +38,13 @@ api.interceptors.response.use(
           refresh: refreshToken,
         });
 
+        // Save new token and retry original request
         localStorage.setItem('access_token', response.data.access);
         originalRequest.headers.Authorization = `Bearer ${response.data.access}`;
 
         return api(originalRequest);
       } catch (err) {
+        // Clear storage and redirect on failed refresh
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         window.location.href = '/login';
@@ -57,7 +60,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (username, password) =>
     axios.post(`${API_BASE_URL}/auth/token/`, { username, password }),
-  
+
   logout: () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -75,12 +78,12 @@ export const datasetAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },
-  downloadPDF: (id) => 
+  downloadPDF: (id) =>
     api.get(`/datasets/${id}/pdf/`, { responseType: 'blob' }),
 };
 
 export const equipmentAPI = {
-  getAll: (datasetId) => 
+  getAll: (datasetId) =>
     api.get('/equipment/', { params: { dataset_id: datasetId } }),
 };
 

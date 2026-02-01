@@ -33,7 +33,6 @@ export default function DatasetDetail() {
       setAnalytics(analyticsRes.data);
       setEquipment(equipmentRes.data.results || equipmentRes.data || []);
     } catch (error) {
-      console.error('Failed to load dataset details:', error);
       setError(error.response?.data?.detail || 'Failed to load dataset');
     } finally {
       setLoading(false);
@@ -50,8 +49,8 @@ export default function DatasetDetail() {
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to download PDF:', error);
       alert('Failed to download PDF');
     }
   };
@@ -63,6 +62,7 @@ export default function DatasetDetail() {
       </div>
     );
   }
+
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -80,6 +80,7 @@ export default function DatasetDetail() {
       </div>
     );
   }
+
   // Prepare chart data
   const pieData = {
     labels: Object.keys(analytics?.equipment_type_distribution || {}),
