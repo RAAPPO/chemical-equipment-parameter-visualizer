@@ -1,5 +1,5 @@
 """
-Django Admin customization - Professional display.
+Django Admin customization - Professional display with performance optimizations.
 """
 from django.contrib import admin
 from django.utils.html import format_html
@@ -34,19 +34,16 @@ class DatasetAdmin(admin.ModelAdmin):
     )
     
     def avg_flowrate_display(self, obj):
-        """Format average flowrate."""
         return f"{obj.avg_flowrate:.2f}" if obj.avg_flowrate is not None else "N/A"
     avg_flowrate_display.short_description = "Avg Flowrate"
     avg_flowrate_display.admin_order_field = 'avg_flowrate'
     
     def avg_pressure_display(self, obj):
-        """Format average pressure."""
         return f"{obj.avg_pressure:.2f}" if obj.avg_pressure is not None else "N/A"
     avg_pressure_display.short_description = "Avg Pressure"
     avg_pressure_display.admin_order_field = 'avg_pressure'
     
     def avg_temperature_display(self, obj):
-        """Format average temperature."""
         return f"{obj.avg_temperature:.2f}" if obj.avg_temperature is not None else "N/A"
     avg_temperature_display.short_description = "Avg Temperature"
     avg_temperature_display.admin_order_field = 'avg_temperature'
@@ -55,6 +52,9 @@ class DatasetAdmin(admin.ModelAdmin):
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
     """Admin interface for Equipment model."""
+    
+    # PERFORMANCE BOOST: Fetch dataset info in the same query as equipment
+    list_select_related = ['dataset']
     
     list_display = [
         'equipment_name',
@@ -88,31 +88,22 @@ class EquipmentAdmin(admin.ModelAdmin):
     )
 
     def dataset_link(self, obj):
-        """
-        Creates a safe, clickable link to the parent Dataset.
-        format_html ensures the filename is escaped properly.
-        """
+        """Creates a safe, clickable link to the parent Dataset."""
         url = f'/admin/api/dataset/{obj.dataset.id}/change/'
         return format_html('<a href="{}">{}</a>', url, obj.dataset.filename)
     dataset_link.short_description = "Dataset"
     dataset_link.admin_order_field = 'dataset__filename'
     
     def outlier_status(self, obj):
-        """
-        Visual indicator for outliers using modern status badges.
-        Note: Assumes 'is_outlier' is a property or method on the Equipment model.
-        """
+        """Visual indicator for outliers using clean status badges."""
         if obj.is_outlier:
             return format_html(
                 '<span style="color: {}; font-weight: bold;">{} OUTLIER</span>',
-                '#dc2626',  # Strong red
-                '⚠'
+                '#dc2626', '⚠'
             )
         return format_html(
             '<span style="color: {};">{} Normal</span>',
-            '#16a34a',  # Clean green
-            '✓'
+            '#16a34a', '✓'
         )
     outlier_status.short_description = "Status"
-    # Allows clicking 'Status' header to sort by pressure outliers
     outlier_status.admin_order_field = 'is_pressure_outlier'
