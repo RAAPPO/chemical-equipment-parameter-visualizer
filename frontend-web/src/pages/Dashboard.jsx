@@ -31,6 +31,22 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
+  const handleDownloadPDF = async (datasetId, filename) => {
+    try {
+      const response = await datasetAPI.downloadPDF(datasetId);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `report_${filename.replace('.csv', '')}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+      alert('Failed to download PDF. Please try again.');
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -42,7 +58,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="bg-primary text-white shadow-lg">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Chemical Equipment Visualizer</h1>
+          <h1 className="text-2xl font-bold">Chemical Equipment Parameter Visualizer</h1>
           <div className="flex items-center gap-4">
             <span className="text-sm">Welcome, <strong>{user?.username}</strong></span>
             <button
@@ -124,7 +140,7 @@ export default function Dashboard() {
                   <button onClick={() => navigate(`/dataset/${dataset.id}`)} className="flex-1 bg-blue-100 text-primary px-3 py-2 rounded text-sm font-medium hover:bg-blue-200 transition">
                     View Details
                   </button>
-                  <button className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm font-medium hover:bg-green-200 transition">
+                  <button onClick={() => handleDownloadPDF(dataset.id, dataset.filename)} className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm font-medium hover:bg-green-200 transition">
                     Download PDF
                   </button>
                 </div>
@@ -142,7 +158,7 @@ export default function Dashboard() {
           <p>User: {user?.username}</p>
         </div>
       </main>
-      
+
       {/* Upload Modal */}
       <UploadModal
         isOpen={uploadModalOpen}

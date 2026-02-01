@@ -28,7 +28,7 @@ export default function DatasetDetail() {
 
       setDataset(datasetRes.data);
       setAnalytics(analyticsRes.data);
-      setEquipment(equipmentRes.data);
+      setEquipment(equipmentRes.data.results || equipmentRes.data || []);
     } catch (error) {
       console.error('Failed to load dataset details:', error);
     } finally {
