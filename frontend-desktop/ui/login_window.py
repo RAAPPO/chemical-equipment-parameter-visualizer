@@ -1,10 +1,13 @@
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QMessageBox, QWidget)
+import logging
+from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+                             QLineEdit, QPushButton, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QPalette, QColor
 
+# Initialize logger
+logger = logging.getLogger(__name__)
 
-class LoginWindow(QDialog):
+class LoginWindow(QWidget):
     """Login window for authentication."""
     
     login_successful = pyqtSignal(str)  # Signal emitted on successful login
@@ -17,9 +20,9 @@ class LoginWindow(QDialog):
     def init_ui(self):
         """Initialize the UI."""
         self.setWindowTitle("CEPV - Login")
-        self.setFixedSize(400, 300)
+        self.setFixedSize(400, 350)
         self.setStyleSheet("""
-            QDialog {
+            QWidget {
                 background-color: #f3f4f6;
             }
             QLineEdit {
@@ -27,6 +30,7 @@ class LoginWindow(QDialog):
                 border: 1px solid #ccc;
                 border-radius: 4px;
                 font-size: 13px;
+                background-color: white;
             }
             QPushButton {
                 background-color: #1E3A8A;
@@ -39,12 +43,15 @@ class LoginWindow(QDialog):
             QPushButton:hover {
                 background-color: #2563EB;
             }
+            QLabel {
+                color: #374151;
+            }
         """)
         
         # Main layout
         layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(40, 40, 40, 40)
+        layout.setSpacing(15)
+        layout.setContentsMargins(40, 30, 40, 30)
         
         # Title
         title = QLabel("CEPV")
@@ -53,16 +60,17 @@ class LoginWindow(QDialog):
         title_font.setPointSize(20)
         title_font.setBold(True)
         title.setFont(title_font)
+        title.setStyleSheet("color: #1E3A8A;")
         layout.addWidget(title)
 
         subtitle = QLabel("Chemical Equipment Parameter Visualizer")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle_font = QFont()
-        subtitle_font.setPointSize(10)
+        subtitle_font.setPointSize(9)
         subtitle.setFont(subtitle_font)
         layout.addWidget(subtitle)
                 
-        layout.addSpacing(20)
+        layout.addSpacing(10)
         
         # Username
         username_label = QLabel("Username:")
@@ -90,6 +98,7 @@ class LoginWindow(QDialog):
         login_btn = QPushButton("Login")
         login_btn.setObjectName("loginBtn")
         login_btn.clicked.connect(self.handle_login)
+        login_btn.setCursor(Qt.PointingHandCursor)
         layout.addWidget(login_btn)
         
         # Demo credentials hint
@@ -102,34 +111,27 @@ class LoginWindow(QDialog):
     
     def handle_login(self):
         """Handle login button click."""
-        print("🔐 Login button clicked")
-        
         username = self.username_input.text().strip()
         password = self.password_input.text().strip()
-        
-        print(f"📝 Username: {username}")
-        print(f"📝 Password: {'*' * len(password)}")
         
         if not username or not password:
             QMessageBox.warning(self, "Error", "Please enter username and password")
             return
         
-        print("🌐 Attempting API login...")
-        # Attempt login
+        logger.info(f"Attempting login for user: {username}")
+        
+        # Attempt login via API client
         result = self.api_client.login(username, password)
         
-        print(f"📡 API Response: {result}")
-        
         if result["success"]:
-            print("✅ Login successful! Emitting signal...")
+            logger.info("Login successful! Emitting signal...")
             self.login_successful.emit(username)
-            print("✅ Signal emitted, accepting dialog...")
-            self.accept()
-            print("✅ Dialog accepted")
+            # The controller will handle closing this widget and opening the MainWindow
         else:
-            print(f"❌ Login failed: {result.get('error')}")
+            error_msg = result.get('error', 'Unknown error')
+            logger.warning(f"Login failed for {username}: {error_msg}")
             QMessageBox.critical(
                 self, 
                 "Login Failed", 
-                f"Authentication failed:\n{result.get('error', 'Unknown error')}"
+                f"Authentication failed:\n{error_msg}"
             )

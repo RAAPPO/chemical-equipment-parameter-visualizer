@@ -1,10 +1,14 @@
+import os
+import logging
+from datetime import datetime
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QTableWidget, QTableWidgetItem,
                              QFileDialog, QMessageBox, QHeaderView, QFrame)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
-import os
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 class DataLoadThread(QThread):
     """Thread for loading data from API."""
@@ -22,6 +26,9 @@ class DataLoadThread(QThread):
 class MainWindow(QMainWindow):
     """Main application window."""
     
+    # Signal to notify the application controller to handle logout
+    logout_requested = pyqtSignal()
+    
     def __init__(self, api_client, username):
         super().__init__()
         self.api_client = api_client
@@ -36,7 +43,6 @@ class MainWindow(QMainWindow):
         self.raise_()
         self.activateWindow()
         
-    
     def init_ui(self):
         """Initialize the UI."""
         self.setWindowTitle("Chemical Equipment Parameter Visualizer")
@@ -196,12 +202,14 @@ class MainWindow(QMainWindow):
             self.table.setItem(row, 1, QTableWidgetItem(str(count)))
             
             # Upload date
-            from datetime import datetime
             date_str = dataset.get("uploaded_at", "")
             if date_str:
-                date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-                formatted_date = date_obj.strftime("%d %b %Y, %H:%M")
-                self.table.setItem(row, 2, QTableWidgetItem(formatted_date))
+                try:
+                    date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    formatted_date = date_obj.strftime("%d %b %Y, %H:%M")
+                    self.table.setItem(row, 2, QTableWidgetItem(formatted_date))
+                except ValueError:
+                    self.table.setItem(row, 2, QTableWidgetItem(date_str))
             
             # View Details button
             view_btn = QPushButton("View Details")
@@ -270,4 +278,5 @@ class MainWindow(QMainWindow):
         )
         
         if reply == QMessageBox.Yes:
-            self.close()
+            logger.info(f"User {self.username} logged out")
+            self.logout_requested.emit()
