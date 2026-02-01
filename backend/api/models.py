@@ -21,6 +21,7 @@ class DatasetManager(models.Manager):
         """Get recent datasets with equipment prefetched."""
         return self.prefetch_related('equipment').order_by('-uploaded_at')[:limit]
 
+
 class Dataset(models.Model):
     """Metadata for uploaded CSV datasets with FIFO management."""
     
@@ -42,7 +43,6 @@ class Dataset(models.Model):
         indexes = [
             models.Index(fields=['-uploaded_at']),
             models.Index(fields=['filename']),
-            models.Index(fields=['dataset', 'is_pressure_outlier', 'is_temperature_outlier']),
         ]
         verbose_name = "Dataset"
         verbose_name_plural = "Datasets"
@@ -54,17 +54,16 @@ class Dataset(models.Model):
         """Calculate analytics for this dataset using database aggregation."""
         from django.db.models import Count, Q
         
-        # Get equipment queryset (not fetched yet)
         equipment_qs = self.equipment.all()
         
-        # Calculate type distribution using aggregation (1 query)
+        # Calculate type distribution using aggregation
         type_distribution = dict(
             equipment_qs.values('equipment_type')
             .annotate(count=Count('id'))
             .values_list('equipment_type', 'count')
         )
         
-        # Get outliers efficiently (1 query with filter)
+        # Get outliers efficiently using the composite index on Equipment
         outliers = equipment_qs.filter(
             Q(is_pressure_outlier=True) | Q(is_temperature_outlier=True)
         ).values('equipment_name', 'equipment_type', 'is_pressure_outlier', 'is_temperature_outlier')
@@ -124,19 +123,16 @@ class Equipment(models.Model):
     class Meta:
         ordering = ['equipment_name']
         indexes = [
-            models.Index(fields=['dataset', 'equipment_type']),
+            models.Index(fields=['dataset_id', 'equipment_type']),
             models.Index(fields=['equipment_name']),
+            # Composite index for efficient outlier filtering within a specific dataset
+            models.Index(fields=['dataset_id', 'is_pressure_outlier', 'is_temperature_outlier']),
         ]
         verbose_name = "Equipment"
         verbose_name_plural = "Equipment"
     
     def __str__(self):
         return f"{self.equipment_name} ({self.equipment_type})"
-    
-    @property
-    def is_outlier(self):
-        """Check if equipment has any outlier flags."""
-        return self.is_pressure_outlier or self.is_temperature_outlier
 
 
 @receiver(post_save, sender=Dataset)
