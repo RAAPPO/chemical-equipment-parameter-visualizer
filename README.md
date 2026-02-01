@@ -59,15 +59,25 @@ A full-stack hybrid application that enables chemical engineers to upload, analy
 
 ### Installation
 
-**Backend Setup:**
+### Backend Setup
+
 ```bash
 cd backend
 python -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python manage.py migrate
-python manage.py runserver
-```
+python manage.py createsuperuser
+
+# Run on port 8100 (to avoid Docker conflict on 8000)
+./run.sh
+# OR
+python manage.py runserver 8100```
+
+**Access Points:**
+
+🚀 Backend API: http://127.0.0.1:8100
+📊 Admin Panel: http://127.0.0.1:8100/admin
 
 **Web Frontend Setup:**
 ```bash
