@@ -4,9 +4,9 @@ from datetime import datetime
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QTableWidget, QTableWidgetItem,
                              QFileDialog, QMessageBox, QHeaderView, QFrame,
-                             QApplication)  # Added QApplication
+                             QApplication)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QCloseEvent, QKeyEvent  # Added QCloseEvent and QKeyEvent
+from PyQt5.QtGui import QFont, QCloseEvent, QKeyEvent
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
     def init_ui(self):
         """Initialize the UI."""
         self.setWindowTitle("Chemical Equipment Parameter Visualizer")
-        self.setGeometry(100, 100, 1200, 700)
+        self.setGeometry(100, 100, 1400, 800)
         
         # Central widget
         central_widget = QWidget()
@@ -55,8 +55,8 @@ class MainWindow(QMainWindow):
         
         # Main layout
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(30, 25, 30, 25)
+        main_layout.setSpacing(25)
         
         # Header
         header = self.create_header()
@@ -73,37 +73,40 @@ class MainWindow(QMainWindow):
         # Status bar
         self.statusBar().showMessage("Ready")
         
-        # Menu bar - Added for Professional UI
+        # Menu bar
         self.create_menu_bar()
 
         central_widget.setLayout(main_layout)
         
-        # Apply modern stylesheet
+        # Apply modern stylesheet with better spacing
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f9fafb;
             }
             QLabel#title {
                 color: #1E3A8A;
-                font-size: 24px;
+                font-size: 22px;
                 font-weight: bold;
+                line-height: 1.4;
             }
             QLabel#username {
                 color: #6B7280;
-                font-size: 14px;
+                font-size: 15px;
+                padding: 5px 10px;
             }
             QPushButton {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 10px 20px;
+                padding: 12px 24px;
                 border: none;
-                border-radius: 6px;
+                border-radius: 8px;
                 font-size: 14px;
-                font-weight: 500;
+                font-weight: 600;
+                min-height: 40px;
             }
             QPushButton:hover {
                 background-color: #1E40AF;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                transform: translateY(-1px);
             }
             QPushButton:pressed {
                 background-color: #1E3A8A;
@@ -114,55 +117,61 @@ class MainWindow(QMainWindow):
             QTableWidget {
                 background-color: white;
                 border: 1px solid #E5E7EB;
-                border-radius: 8px;
+                border-radius: 10px;
                 gridline-color: #F3F4F6;
+                font-size: 13px;
+                padding: 5px;
             }
             QTableWidget::item {
-                padding: 8px;
+                padding: 12px 8px;
+                border-bottom: 1px solid #F3F4F6;
             }
             QTableWidget::item:selected {
                 background-color: #DBEAFE;
                 color: #1E3A8A;
             }
             QTableWidget::item:hover {
-                background-color: #F3F4F6;
+                background-color: #F9FAFB;
             }
             QHeaderView::section {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 12px;
+                padding: 15px 10px;
                 border: none;
-                font-weight: 600;
-                font-size: 13px;
+                font-weight: 700;
+                font-size: 14px;
             }
             QStatusBar {
-                background-color: #F3F4F6;
+                background-color: #F9FAFB;
                 color: #6B7280;
                 border-top: 1px solid #E5E7EB;
-                padding: 5px;
+                padding: 8px;
+                font-size: 13px;
             }
             QMenuBar {
                 background-color: white;
                 border-bottom: 1px solid #E5E7EB;
-                padding: 5px;
+                padding: 8px;
+                font-size: 13px;
             }
             QMenuBar::item {
-                padding: 8px 12px;
+                padding: 10px 15px;
                 background-color: transparent;
+                border-radius: 6px;
             }
             QMenuBar::item:selected {
                 background-color: #F3F4F6;
-                border-radius: 4px;
             }
             QMenu {
                 background-color: white;
                 border: 1px solid #E5E7EB;
-                border-radius: 6px;
-                padding: 5px;
+                border-radius: 8px;
+                padding: 8px;
             }
             QMenu::item {
-                padding: 8px 30px 8px 20px;
-                border-radius: 4px;
+                padding: 10px 35px 10px 25px;
+                border-radius: 6px;
+                font-size: 13px;
             }
             QMenu::item:selected {
                 background-color: #DBEAFE;
@@ -180,13 +189,11 @@ class MainWindow(QMainWindow):
         # File Menu
         file_menu = menubar.addMenu('&File')
         
-        # Upload CSV
         upload_action = file_menu.addAction('📁 Upload CSV')
         upload_action.setShortcut('Ctrl+O')
         upload_action.setStatusTip('Upload a new CSV dataset')
         upload_action.triggered.connect(self.handle_upload)
         
-        # Refresh
         refresh_action = file_menu.addAction('🔄 Refresh')
         refresh_action.setShortcut('Ctrl+R')
         refresh_action.setStatusTip('Refresh dataset list')
@@ -194,7 +201,6 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
         
-        # Logout
         logout_action = file_menu.addAction('🚪 Logout')
         logout_action.setShortcut('Ctrl+L')
         logout_action.setStatusTip('Logout and return to login screen')
@@ -202,7 +208,6 @@ class MainWindow(QMainWindow):
         
         file_menu.addSeparator()
         
-        # Exit
         exit_action = file_menu.addAction('❌ Exit')
         exit_action.setShortcut('Ctrl+Q')
         exit_action.setStatusTip('Exit application')
@@ -210,8 +215,6 @@ class MainWindow(QMainWindow):
         
         # View Menu
         view_menu = menubar.addMenu('&View')
-        
-        # Toggle Status Bar
         status_bar_action = view_menu.addAction('Status Bar')
         status_bar_action.setCheckable(True)
         status_bar_action.setChecked(True)
@@ -220,12 +223,10 @@ class MainWindow(QMainWindow):
         # Help Menu
         help_menu = menubar.addMenu('&Help')
         
-        # About
         about_action = help_menu.addAction('ℹ️ About')
         about_action.setShortcut('F1')
         about_action.triggered.connect(self.show_about)
         
-        # Documentation
         docs_action = help_menu.addAction('📖 Documentation')
         docs_action.triggered.connect(self.show_documentation)
         
@@ -234,22 +235,37 @@ class MainWindow(QMainWindow):
     def create_header(self):
         """Create header section."""
         header_frame = QFrame()
+        header_frame.setMinimumHeight(80)
         header_layout = QHBoxLayout()
+        header_layout.setContentsMargins(10, 10, 10, 10)
         
-        title = QLabel("Chemical Equipment Parameter Visualizer")
+        title = QLabel("Chemical Equipment\nParameter Visualizer")
         title.setObjectName("title")
+        title.setStyleSheet("""
+            color: #1E3A8A;
+            font-size: 22px;
+            font-weight: bold;
+            line-height: 1.3;
+        """)
         header_layout.addWidget(title)
         
         header_layout.addStretch()
         
-        username_label = QLabel(f"Welcome, {self.username}")
+        username_label = QLabel(f"👤 {self.username}")
         username_label.setObjectName("username")
+        username_label.setStyleSheet("color: #6B7280; font-size: 15px;")
         header_layout.addWidget(username_label)
         
-        logout_btn = QPushButton("Logout")
-        logout_btn.setToolTip("Logout and return to login screen (Ctrl+L)")  # Added tooltip
+        logout_btn = QPushButton("🚪 Logout")
+        logout_btn.setToolTip("Logout and return to login screen (Ctrl+L)")
+        logout_btn.setMinimumHeight(40)
+        logout_btn.setMinimumWidth(120)
         logout_btn.clicked.connect(self.handle_logout)
-        logout_btn.setStyleSheet("background-color: #DC2626;")
+        logout_btn.setStyleSheet("""
+            background-color: #DC2626;
+            padding: 10px 20px;
+            font-size: 14px;
+        """)
         header_layout.addWidget(logout_btn)
         
         header_frame.setLayout(header_layout)
@@ -258,21 +274,31 @@ class MainWindow(QMainWindow):
     def create_toolbar(self):
         """Create toolbar with action buttons."""
         toolbar_frame = QFrame()
+        toolbar_frame.setMinimumHeight(60)
         toolbar_layout = QHBoxLayout()
+        toolbar_layout.setContentsMargins(10, 10, 10, 10)
         
-        toolbar_label = QLabel("Datasets")
-        toolbar_label.setStyleSheet("font-size: 18px; font-weight: bold; color: #374151;")
+        toolbar_label = QLabel("📊 Datasets")
+        toolbar_label.setStyleSheet("""
+            font-size: 20px;
+            font-weight: bold;
+            color: #374151;
+        """)
         toolbar_layout.addWidget(toolbar_label)
         
         toolbar_layout.addStretch()
         
         upload_btn = QPushButton("📁 Upload CSV")
-        upload_btn.setToolTip("Upload a new CSV dataset (Ctrl+O)")  # Added tooltip
+        upload_btn.setToolTip("Upload a new CSV dataset (Ctrl+O)")
+        upload_btn.setMinimumHeight(42)
+        upload_btn.setMinimumWidth(150)
         upload_btn.clicked.connect(self.handle_upload)
         toolbar_layout.addWidget(upload_btn)
         
         refresh_btn = QPushButton("🔄 Refresh")
-        refresh_btn.setToolTip("Refresh dataset list (Ctrl+R)")  # Added tooltip
+        refresh_btn.setToolTip("Refresh dataset list (Ctrl+R)")
+        refresh_btn.setMinimumHeight(42)
+        refresh_btn.setMinimumWidth(130)
         refresh_btn.clicked.connect(self.load_datasets)
         toolbar_layout.addWidget(refresh_btn)
         
@@ -283,18 +309,26 @@ class MainWindow(QMainWindow):
         """Create datasets table."""
         table = QTableWidget()
         table.setColumnCount(5)
-        table.setHorizontalHeaderLabels(["Filename", "Equipment Count", "Upload Date", "Actions", "PDF"])
+        table.setHorizontalHeaderLabels([
+            "📄 Filename",
+            "📊 Equipment Count",
+            "📅 Upload Date",
+            "🔍 Actions",
+            "📥 PDF"
+        ])
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        table.verticalHeader().setDefaultSectionSize(60)
         table.setSelectionBehavior(QTableWidget.SelectRows)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setAlternatingRowColors(True)
+        table.setShowGrid(True)
+        table.setMinimumHeight(400)
         return table
     
     def load_datasets(self):
         """Load datasets from API."""
         self.statusBar().showMessage("Loading datasets...")
         
-        # Use thread for API call
         self.load_thread = DataLoadThread(self.api_client)
         self.load_thread.finished.connect(self.on_datasets_loaded)
         self.load_thread.start()
@@ -314,14 +348,11 @@ class MainWindow(QMainWindow):
         self.table.setRowCount(len(self.datasets))
         
         for row, dataset in enumerate(self.datasets):
-            # Filename
             self.table.setItem(row, 0, QTableWidgetItem(dataset.get("filename", "")))
             
-            # Equipment count
             count = dataset.get("total_equipment") or dataset.get("equipment_count", 0)
             self.table.setItem(row, 1, QTableWidgetItem(str(count)))
             
-            # Upload date
             date_str = dataset.get("uploaded_at", "")
             if date_str:
                 try:
@@ -331,13 +362,13 @@ class MainWindow(QMainWindow):
                 except ValueError:
                     self.table.setItem(row, 2, QTableWidgetItem(date_str))
             
-            # View Details button
-            view_btn = QPushButton("View Details")
+            view_btn = QPushButton("🔍 View Details")
+            view_btn.setMinimumHeight(35)
             view_btn.clicked.connect(lambda checked, d=dataset: self.view_details(d))
             self.table.setCellWidget(row, 3, view_btn)
             
-            # Download PDF button
-            pdf_btn = QPushButton("Download PDF")
+            pdf_btn = QPushButton("📥 Download PDF")
+            pdf_btn.setMinimumHeight(35)
             pdf_btn.setStyleSheet("background-color: #059669;")
             pdf_btn.clicked.connect(lambda checked, d=dataset: self.download_pdf(d))
             self.table.setCellWidget(row, 4, pdf_btn)
@@ -433,19 +464,16 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         layout.setSpacing(15)
         
-        # App icon/title
         title = QLabel("🧪 Chemical Equipment Parameter Visualizer")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 16px; font-weight: bold; color: #1E3A8A;")
         layout.addWidget(title)
         
-        # Version
         version = QLabel("Version 1.0.0")
         version.setAlignment(Qt.AlignCenter)
         version.setStyleSheet("font-size: 12px; color: #6B7280;")
         layout.addWidget(version)
         
-        # Description
         desc = QLabel(
             "A professional desktop application for analyzing\n"
             "and visualizing chemical equipment parameters.\n\n"
@@ -456,7 +484,6 @@ class MainWindow(QMainWindow):
         desc.setStyleSheet("font-size: 11px; color: #374151;")
         layout.addWidget(desc)
         
-        # Credits
         credits = QLabel(
             "Developed by: RAAPPO\n"
             "FOSSEE Internship 2026"
@@ -465,7 +492,6 @@ class MainWindow(QMainWindow):
         credits.setStyleSheet("font-size: 10px; color: #6B7280; margin-top: 20px;")
         layout.addWidget(credits)
         
-        # Close button
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.close)
         layout.addWidget(close_btn)
@@ -485,7 +511,6 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event):
         """Handle keyboard shortcuts."""
-        # Escape key to close dialogs
         if event.key() == Qt.Key_Escape:
             self.statusBar().showMessage("Press Ctrl+Q to exit or Ctrl+L to logout", 3000)
         else:
@@ -499,7 +524,7 @@ class MainWindow(QMainWindow):
             "Are you sure you want to close the application?\n"
             "Click 'Logout' if you want to return to login screen.",
             QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No  # Default to No
+            QMessageBox.No
         )
         
         if reply == QMessageBox.Yes:

@@ -1,7 +1,6 @@
 import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QMessageBox, 
-                             QApplication)  # Added QApplication
+                             QLineEdit, QPushButton, QMessageBox)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QPalette, QColor
 
@@ -21,9 +20,69 @@ class LoginWindow(QWidget):
     def init_ui(self):
         """Initialize the UI."""
         self.setWindowTitle("CEPV - Login")
-        self.setFixedSize(400, 350)
+        self.setFixedSize(450, 380)
         
-        # Apply improved modern styling
+        # Main layout
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(40, 30, 40, 30)
+        
+        # Title
+        title = QLabel("CEPV")
+        title.setAlignment(Qt.AlignCenter)
+        title_font = QFont()
+        title_font.setPointSize(28)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        title.setStyleSheet("color: #1E3A8A; margin-bottom: 5px;")
+        layout.addWidget(title)
+
+        # Subtitle split into 2 lines
+        subtitle = QLabel("Chemical Equipment\nParameter Visualizer")
+        subtitle.setAlignment(Qt.AlignCenter)
+        subtitle_font = QFont()
+        subtitle_font.setPointSize(11)
+        subtitle.setFont(subtitle_font)
+        subtitle.setStyleSheet("color: #6B7280; line-height: 1.4;")
+        layout.addWidget(subtitle)
+                
+        layout.addSpacing(10)
+        
+        # Username
+        self.username_input = QLineEdit()
+        self.username_input.setPlaceholderText("Enter username")
+        self.username_input.setText("testuser")  # Default for demo
+        self.username_input.setMinimumHeight(40)
+        layout.addWidget(self.username_input)
+        
+        # Password
+        self.password_input = QLineEdit()
+        self.password_input.setPlaceholderText("Enter password")
+        self.password_input.setEchoMode(QLineEdit.Password)
+        self.password_input.setText("testpass123")  # Default for demo
+        self.password_input.setMinimumHeight(40)
+        self.password_input.returnPressed.connect(self.handle_login)
+        layout.addWidget(self.password_input)
+        
+        layout.addSpacing(10)
+        
+        # Login button
+        login_btn = QPushButton("Login")
+        login_btn.setObjectName("loginBtn")
+        login_btn.setMinimumHeight(45)
+        login_btn.clicked.connect(self.handle_login)
+        login_btn.setCursor(Qt.PointingHandCursor)
+        layout.addWidget(login_btn)
+        
+        # Demo credentials hint
+        demo_label = QLabel("Demo: testuser / testpass123")
+        demo_label.setStyleSheet("color: #6B7280; font-size: 11px;")
+        demo_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(demo_label)
+        
+        self.setLayout(layout)
+        
+        # Apply modern stylesheet
         self.setStyleSheet("""
             QWidget {
                 background-color: #f9fafb;
@@ -58,67 +117,6 @@ class LoginWindow(QWidget):
                 color: #374151;
             }
         """)
-        
-        # Main layout
-        layout = QVBoxLayout()
-        layout.setSpacing(15)
-        layout.setContentsMargins(40, 30, 40, 30)
-        
-        # Title
-        title = QLabel("CEPV")
-        title.setAlignment(Qt.AlignCenter)
-        title_font = QFont()
-        title_font.setPointSize(20)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        title.setStyleSheet("color: #1E3A8A;")
-        layout.addWidget(title)
-
-        subtitle = QLabel("Chemical Equipment Parameter Visualizer")
-        subtitle.setAlignment(Qt.AlignCenter)
-        subtitle_font = QFont()
-        subtitle_font.setPointSize(9)
-        subtitle.setFont(subtitle_font)
-        layout.addWidget(subtitle)
-                
-        layout.addSpacing(10)
-        
-        # Username
-        username_label = QLabel("Username:")
-        layout.addWidget(username_label)
-        
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Enter username")
-        self.username_input.setText("testuser")  # Default for demo
-        layout.addWidget(self.username_input)
-        
-        # Password
-        password_label = QLabel("Password:")
-        layout.addWidget(password_label)
-        
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Enter password")
-        self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setText("testpass123")  # Default for demo
-        self.password_input.returnPressed.connect(self.handle_login)
-        layout.addWidget(self.password_input)
-        
-        layout.addSpacing(10)
-        
-        # Login button
-        login_btn = QPushButton("Login")
-        login_btn.setObjectName("loginBtn")
-        login_btn.clicked.connect(self.handle_login)
-        login_btn.setCursor(Qt.PointingHandCursor)
-        layout.addWidget(login_btn)
-        
-        # Demo credentials hint
-        demo_label = QLabel("Demo: testuser / testpass123")
-        demo_label.setStyleSheet("color: #6B7280; font-size: 11px;")
-        demo_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(demo_label)
-        
-        self.setLayout(layout)
     
     def handle_login(self):
         """Handle login button click."""
@@ -131,7 +129,6 @@ class LoginWindow(QWidget):
         
         logger.info(f"Attempting login for user: {username}")
         
-        # Attempt login via API client
         result = self.api_client.login(username, password)
         
         if result["success"]:
@@ -145,18 +142,3 @@ class LoginWindow(QWidget):
                 "Login Failed", 
                 f"Authentication failed:\n{error_msg}"
             )
-
-    def closeEvent(self, event):
-        """Handle window close event."""
-        reply = QMessageBox.question(
-            self,
-            "Exit Application",
-            "Are you sure you want to exit?",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        
-        if reply == QMessageBox.Yes:
-            event.accept()
-            QApplication.quit()
-        else:
-            event.ignore()
