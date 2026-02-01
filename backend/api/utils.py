@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
 from io import StringIO
+import logging
 from .models import Dataset, Equipment
 
+# Initialize logger
+logger = logging.getLogger(__name__)
 
 def validate_csv_structure(file):
     """
@@ -18,6 +21,8 @@ def validate_csv_structure(file):
         ValueError: If CSV structure is invalid
     """
     try:
+        logger.debug(f"Validating CSV file: {file.name}")
+        
         # Read CSV
         content = file.read().decode('utf-8')
         df = pd.read_csv(StringIO(content))
@@ -28,7 +33,9 @@ def validate_csv_structure(file):
         # Check if all required columns exist
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
-            raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+            error_msg = f"Missing required columns: {', '.join(missing_columns)}"
+            logger.warning(f"Validation error for {file.name}: {error_msg}")
+            raise ValueError(error_msg)
         
         # Validate data types
         numeric_columns = ['Flowrate', 'Pressure', 'Temperature']
@@ -36,14 +43,21 @@ def validate_csv_structure(file):
             df[col] = pd.to_numeric(df[col], errors='coerce')
         
         # Remove rows with missing critical data
+        initial_count = len(df)
         df = df.dropna(subset=numeric_columns)
+        dropped_count = initial_count - len(df)
+        
+        if dropped_count > 0:
+            logger.info(f"Dropped {dropped_count} rows with missing numeric data in {file.name}")
         
         if df.empty:
             raise ValueError("CSV contains no valid data after cleaning")
         
+        logger.info(f"CSV validated successfully: {len(df)} rows")
         return df
     
     except Exception as e:
+        logger.error(f"CSV validation failed for {file.name}: {str(e)}")
         raise ValueError(f"CSV validation failed: {str(e)}")
 
 
@@ -57,17 +71,18 @@ def detect_outliers(values):
     Returns:
         np.array: Boolean array indicating outliers (True = outlier)
     """
-    if len(values) < 3:  # Need at least 3 values for meaningful statistics
+    if len(values) < 3:
+        logger.debug("Too few values for outlier detection (minimum 3 required)")
         return np.zeros(len(values), dtype=bool)
     
     mean = np.mean(values)
     std = np.std(values)
     
-    if std == 0:  # All values are identical
+    if std == 0:
         return np.zeros(len(values), dtype=bool)
     
     z_scores = np.abs((values - mean) / std)
-    return z_scores > 2  # Outliers have |Z-score| > 2
+    return z_scores > 2
 
 
 def process_csv_and_create_dataset(file, filename):
@@ -81,47 +96,55 @@ def process_csv_and_create_dataset(file, filename):
     Returns:
         Dataset: Created dataset instance
     """
-    # Validate and parse CSV
-    df = validate_csv_structure(file)
-    
-    # Calculate statistics
-    total_equipment = len(df)
-    avg_flowrate = df['Flowrate'].mean()
-    avg_pressure = df['Pressure'].mean()
-    avg_temperature = df['Temperature'].mean()
-    
-    # Create Dataset record
-    dataset = Dataset.objects.create(
-        filename=filename,
-        total_equipment=total_equipment,
-        avg_flowrate=round(avg_flowrate, 2),
-        avg_pressure=round(avg_pressure, 2),
-        avg_temperature=round(avg_temperature, 2),
-    )
-    
-    # Detect outliers
-    pressure_outliers = detect_outliers(df['Pressure'].values)
-    temperature_outliers = detect_outliers(df['Temperature'].values)
-    
-    # Create Equipment records
-    equipment_list = []
-    for idx, row in df.iterrows():
-        equipment = Equipment(
-            dataset=dataset,
-            equipment_name=row['Equipment Name'],
-            equipment_type=row['Type'],
-            flowrate=row['Flowrate'],
-            pressure=row['Pressure'],
-            temperature=row['Temperature'],
-            is_pressure_outlier=bool(pressure_outliers[idx]),
-            is_temperature_outlier=bool(temperature_outliers[idx]),
+    try:
+        logger.info(f"Starting processing for file: {filename}")
+        
+        # Validate and parse CSV
+        df = validate_csv_structure(file)
+        
+        # Calculate statistics
+        total_equipment = len(df)
+        avg_flowrate = df['Flowrate'].mean()
+        avg_pressure = df['Pressure'].mean()
+        avg_temperature = df['Temperature'].mean()
+        
+        # Create Dataset record
+        dataset = Dataset.objects.create(
+            filename=filename,
+            total_equipment=total_equipment,
+            avg_flowrate=round(avg_flowrate, 2),
+            avg_pressure=round(avg_pressure, 2),
+            avg_temperature=round(avg_temperature, 2),
         )
-        equipment_list.append(equipment)
-    
-    # Bulk create for efficiency
-    Equipment.objects.bulk_create(equipment_list)
-    
-    return dataset
+        
+        # Detect outliers
+        pressure_outliers = detect_outliers(df['Pressure'].values)
+        temperature_outliers = detect_outliers(df['Temperature'].values)
+        
+        # Create Equipment records
+        equipment_list = []
+        for idx, row in df.iterrows():
+            equipment = Equipment(
+                dataset=dataset,
+                equipment_name=row['Equipment Name'],
+                equipment_type=row['Type'],
+                flowrate=row['Flowrate'],
+                pressure=row['Pressure'],
+                temperature=row['Temperature'],
+                is_pressure_outlier=bool(pressure_outliers[idx]),
+                is_temperature_outlier=bool(temperature_outliers[idx]),
+            )
+            equipment_list.append(equipment)
+        
+        # Bulk create for efficiency
+        Equipment.objects.bulk_create(equipment_list)
+        
+        logger.info(f"Successfully processed {filename}. Dataset ID: {dataset.id}")
+        return dataset
+
+    except Exception as e:
+        logger.error(f"Error processing dataset {filename}: {str(e)}", exc_info=True)
+        raise
 
 
 def get_analytics_for_dataset(dataset_id):
@@ -135,6 +158,7 @@ def get_analytics_for_dataset(dataset_id):
         dict: Analytics data
     """
     try:
+        logger.debug(f"Fetching analytics for dataset: {dataset_id}")
         dataset = Dataset.objects.get(id=dataset_id)
         equipment = dataset.equipment.all()
         
@@ -155,7 +179,7 @@ def get_analytics_for_dataset(dataset_id):
             for eq in outliers.distinct()
         ]
         
-        return {
+        analytics = {
             'total_equipment': dataset.total_equipment,
             'avg_flowrate': dataset.avg_flowrate,
             'avg_pressure': dataset.avg_pressure,
@@ -164,6 +188,13 @@ def get_analytics_for_dataset(dataset_id):
             'outliers_count': len(outlier_list),
             'outlier_equipment': outlier_list,
         }
+        
+        logger.debug(f"Analytics successfully compiled for {dataset_id}")
+        return analytics
     
     except Dataset.DoesNotExist:
+        logger.error(f"Analytics request failed: Dataset {dataset_id} not found")
         raise ValueError(f"Dataset with id {dataset_id} not found")
+    except Exception as e:
+        logger.error(f"Unexpected error getting analytics for {dataset_id}: {str(e)}")
+        raise
