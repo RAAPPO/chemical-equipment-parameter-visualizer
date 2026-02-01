@@ -1,7 +1,9 @@
 import requests
 from typing import Optional, Dict, Any
 import json
+import logging
 
+logger = logging.getLogger(__name__)
 
 class APIClient:
     """Client for communicating with Django backend API."""
@@ -28,6 +30,13 @@ class APIClient:
             return {"success": True, "data": data}
         except requests.exceptions.RequestException as e:
             return {"success": False, "error": str(e)}
+
+    def logout(self):
+        """Clear stored authentication tokens."""
+        self.access_token = None
+        self.refresh_token = None
+        # Tokens are stored in memory, not localStorage in desktop app
+        logger.info("User logged out, tokens cleared")
     
     def _get_headers(self) -> Dict[str, str]:
         """Get headers with authorization token."""

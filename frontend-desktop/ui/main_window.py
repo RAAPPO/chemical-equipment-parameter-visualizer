@@ -37,7 +37,8 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.load_datasets()
 
-        print(f"🪟 MainWindow initialized for user: {username}")
+        # Replaced print with logger.info for consistency
+        logger.info(f"MainWindow initialized for user: {username}")
         self.setWindowState(self.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
         self.show() 
         self.raise_()

@@ -72,16 +72,23 @@ class Application:
         """Handle logout request."""
         logger.info("Logout requested")
         
-        # Clear tokens
-        self.api_client.logout()
-        
-        # Close main window
-        if self.main_window:
-            self.main_window.close()
-            self.main_window = None
-        
-        # Show login again
-        self.show_login()
+        try:
+            # Clear tokens
+            self.api_client.logout()
+            
+            # Close main window gracefully
+            if self.main_window:
+                self.main_window.hide()  # Hide first to prevent flicker
+                self.main_window.close()
+                self.main_window.deleteLater()  # Proper Qt cleanup
+                self.main_window = None
+            
+            # Show login again
+            self.show_login()
+        except Exception as e:
+            logger.error(f"Error during logout: {e}")
+            # Even if logout fails, show login window
+            self.show_login()
     
     def run(self):
         """Start the application."""
