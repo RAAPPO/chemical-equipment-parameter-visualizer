@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         self.api_client = api_client
         self.username = username
         self.datasets = []
+        self.detail_windows = []  # Store open detail windows to prevent garbage collection
         self.init_ui()
         self.load_datasets()
 
@@ -49,7 +50,6 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Chemical Equipment Parameter Visualizer")
         
         # Get screen geometry and calculate appropriate window size
-        from PyQt5.QtWidgets import QDesktopWidget
         screen = QDesktopWidget().screenGeometry()
         
         # Use 80% of screen width and height for better fit
@@ -263,19 +263,12 @@ class MainWindow(QMainWindow):
         
         title = QLabel("Chemical Equipment\nParameter Visualizer")
         title.setObjectName("title")
-        title.setStyleSheet("""
-            color: #1E3A8A;
-            font-size: 20px;
-            font-weight: bold;
-            line-height: 1.3;
-        """)
         header_layout.addWidget(title)
         
         header_layout.addStretch()
         
         username_label = QLabel(f"👤 {self.username}")
         username_label.setObjectName("username")
-        username_label.setStyleSheet("color: #6B7280; font-size: 14px;")
         header_layout.addWidget(username_label)
         
         logout_btn = QPushButton("🚪 Logout")
@@ -417,8 +410,22 @@ class MainWindow(QMainWindow):
     def view_details(self, dataset):
         """View dataset details in a new window."""
         from widgets.detail_widget import DatasetDetailWindow
+        
+        # Create window and store reference to prevent garbage collection
         detail_window = DatasetDetailWindow(self.api_client, dataset, self)
+        
+        # Store reference
+        self.detail_windows.append(detail_window)
+        
+        # Clean up when window is closed to free memory
+        detail_window.destroyed.connect(
+            lambda: self.detail_windows.remove(detail_window) 
+            if detail_window in self.detail_windows else None
+        )
+        
+        # Show window
         detail_window.show()
+        logger.info(f"Opened detail window for: {dataset.get('filename')}")
     
     def download_pdf(self, dataset):
         """Download PDF report."""
