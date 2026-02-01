@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { datasetAPI } from '../services/api';
 import { useNavigate } from 'react-router-dom';
+import UploadModal from '../components/UploadModal';
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [datasets, setDatasets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
   useEffect(() => {
     loadDatasets();
@@ -57,7 +59,7 @@ export default function Dashboard() {
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">Datasets</h2>
-          <button className="bg-primary text-white px-6 py-2 rounded hover:bg-blue-800 transition">
+          <button onClick={() => setUploadModalOpen(true)} className="bg-primary text-white px-6 py-2 rounded hover:bg-blue-800 transition">
             Upload CSV
           </button>
         </div>
@@ -119,7 +121,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">
-                  <button className="flex-1 bg-blue-100 text-primary px-3 py-2 rounded text-sm font-medium hover:bg-blue-200 transition">
+                  <button onClick={() => navigate(`/dataset/${dataset.id}`)} className="flex-1 bg-blue-100 text-primary px-3 py-2 rounded text-sm font-medium hover:bg-blue-200 transition">
                     View Details
                   </button>
                   <button className="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded text-sm font-medium hover:bg-green-200 transition">
@@ -140,6 +142,16 @@ export default function Dashboard() {
           <p>User: {user?.username}</p>
         </div>
       </main>
+      
+      {/* Upload Modal */}
+      <UploadModal
+        isOpen={uploadModalOpen}
+        onClose={() => setUploadModalOpen(false)}
+        onSuccess={(newDataset) => {
+          loadDatasets();
+          setUploadModalOpen(false);
+        }}
+      />
     </div>
   );
 }

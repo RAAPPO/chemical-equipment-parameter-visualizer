@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import DatasetDetail from './pages/DatasetDetail';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -25,6 +26,14 @@ function App() {
             }
           />
           <Route path="/" element={<Navigate to="/dashboard" />} />
+          <Route
+            path="/dataset/:id"
+            element={
+              <PrivateRoute>
+                <DatasetDetail />
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
