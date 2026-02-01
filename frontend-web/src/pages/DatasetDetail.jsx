@@ -13,12 +13,15 @@ export default function DatasetDetail() {
   const [analytics, setAnalytics] = useState(null);
   const [equipment, setEquipment] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     loadDatasetDetails();
   }, [id]);
 
   const loadDatasetDetails = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const [datasetRes, analyticsRes, equipmentRes] = await Promise.all([
         datasetAPI.getById(id),
@@ -31,6 +34,7 @@ export default function DatasetDetail() {
       setEquipment(equipmentRes.data.results || equipmentRes.data || []);
     } catch (error) {
       console.error('Failed to load dataset details:', error);
+      setError(error.response?.data?.detail || 'Failed to load dataset');
     } finally {
       setLoading(false);
     }
@@ -59,7 +63,23 @@ export default function DatasetDetail() {
       </div>
     );
   }
-
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="text-red-600 text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error Loading Dataset</h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-primary text-white px-6 py-2 rounded hover:bg-blue-800"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
   // Prepare chart data
   const pieData = {
     labels: Object.keys(analytics?.equipment_type_distribution || {}),
@@ -119,7 +139,7 @@ export default function DatasetDetail() {
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 flex items-center gap-2"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z"/>
+                <path d="M13 8V2H7v6H2l8 8 8-8h-5zM0 18h20v2H0v-2z" />
               </svg>
               Download PDF
             </button>
@@ -194,22 +214,30 @@ export default function DatasetDetail() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {equipment.map((eq) => (
-                  <tr key={eq.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{eq.equipment_name}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.equipment_type}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.flowrate.toFixed(1)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.pressure.toFixed(1)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.temperature.toFixed(1)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {eq.is_pressure_outlier || eq.is_temperature_outlier ? (
-                        <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Outlier</span>
-                      ) : (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Normal</span>
-                      )}
+                {equipment.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                      No equipment data available
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  equipment.map((eq) => (
+                    <tr key={eq.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{eq.equipment_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.equipment_type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.flowrate.toFixed(1)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.pressure.toFixed(1)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{eq.temperature.toFixed(1)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {eq.is_pressure_outlier || eq.is_temperature_outlier ? (
+                          <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">Outlier</span>
+                        ) : (
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">Normal</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
