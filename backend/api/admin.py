@@ -35,19 +35,19 @@ class DatasetAdmin(admin.ModelAdmin):
     
     def avg_flowrate_display(self, obj):
         """Format average flowrate."""
-        return f"{obj.avg_flowrate:.2f}" if obj.avg_flowrate else "N/A"
+        return f"{obj.avg_flowrate:.2f}" if obj.avg_flowrate is not None else "N/A"
     avg_flowrate_display.short_description = "Avg Flowrate"
     avg_flowrate_display.admin_order_field = 'avg_flowrate'
     
     def avg_pressure_display(self, obj):
         """Format average pressure."""
-        return f"{obj.avg_pressure:.2f}" if obj.avg_pressure else "N/A"
+        return f"{obj.avg_pressure:.2f}" if obj.avg_pressure is not None else "N/A"
     avg_pressure_display.short_description = "Avg Pressure"
     avg_pressure_display.admin_order_field = 'avg_pressure'
     
     def avg_temperature_display(self, obj):
         """Format average temperature."""
-        return f"{obj.avg_temperature:.2f}" if obj.avg_temperature else "N/A"
+        return f"{obj.avg_temperature:.2f}" if obj.avg_temperature is not None else "N/A"
     avg_temperature_display.short_description = "Avg Temperature"
     avg_temperature_display.admin_order_field = 'avg_temperature'
 
@@ -86,24 +86,33 @@ class EquipmentAdmin(admin.ModelAdmin):
             'description': 'Automatically detected using Z-score method (threshold: 2.0)'
         }),
     )
-    
+
     def dataset_link(self, obj):
-        """Link to parent dataset."""
-        return format_html(
-            '<a href="/admin/api/dataset/{}/change/">{}</a>',
-            obj.dataset.id,
-            obj.dataset.filename
-        )
+        """
+        Creates a safe, clickable link to the parent Dataset.
+        format_html ensures the filename is escaped properly.
+        """
+        url = f'/admin/api/dataset/{obj.dataset.id}/change/'
+        return format_html('<a href="{}">{}</a>', url, obj.dataset.filename)
     dataset_link.short_description = "Dataset"
+    dataset_link.admin_order_field = 'dataset__filename'
     
     def outlier_status(self, obj):
-        """Visual indicator for outliers."""
+        """
+        Visual indicator for outliers using modern status badges.
+        Note: Assumes 'is_outlier' is a property or method on the Equipment model.
+        """
         if obj.is_outlier:
             return format_html(
-                '<span style="color: red; font-weight: bold;">⚠ OUTLIER</span>'
+                '<span style="color: {}; font-weight: bold;">{} OUTLIER</span>',
+                '#dc2626',  # Strong red
+                '⚠'
             )
         return format_html(
-            '<span style="color: green;">✓ Normal</span>'
+            '<span style="color: {};">{} Normal</span>',
+            '#16a34a',  # Clean green
+            '✓'
         )
     outlier_status.short_description = "Status"
+    # Allows clicking 'Status' header to sort by pressure outliers
     outlier_status.admin_order_field = 'is_pressure_outlier'
