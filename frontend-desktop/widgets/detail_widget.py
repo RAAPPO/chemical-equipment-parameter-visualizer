@@ -1,12 +1,13 @@
 """
-Dataset Detail Window - Clean, working version with proper charts
+Dataset Detail Window - Professional version matching web app design
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QPushButton, QFrame,
-                             QTabWidget, QGridLayout, QHeaderView, QDesktopWidget,
-                             QScrollArea, QSizePolicy)
-from PyQt5.QtCore import Qt
+                             QTabWidget, QGridLayout, QHeaderView, QDesktopWidget, QSplitter)
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QColor
+import matplotlib
+matplotlib.use('Qt5Agg')  # CRITICAL: Force Qt5 backend
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetDetailWindow(QMainWindow):
-    """Dataset detail window with charts and equipment table."""
+    """Professional dataset detail window with working charts."""
     
     def __init__(self, api_client, dataset, parent=None):
         super().__init__(parent)
@@ -25,7 +26,7 @@ class DatasetDetailWindow(QMainWindow):
         self.analytics = None
         self.equipment = []
         
-        # Store value labels for stats
+        # Stat value labels
         self.total_value = None
         self.flowrate_value = None
         self.pressure_value = None
@@ -35,57 +36,108 @@ class DatasetDetailWindow(QMainWindow):
         self.load_data()
     
     def init_ui(self):
-        """Initialize UI with proper sizing."""
+        """Initialize UI."""
         self.setWindowTitle(f"Dataset Analysis - {self.dataset.get('filename')}")
         
-        # Get screen size and set window to 75% of screen
+        # Screen-aware sizing
         screen = QDesktopWidget().screenGeometry()
-        width = int(screen.width() * 0.75)
-        height = int(screen.height() * 0.75)
-        
-        # Apply constraints
-        width = max(1000, min(width, 1400))
-        height = max(700, min(height, 950))
+        width = min(int(screen.width() * 0.80), 1300)
+        height = min(int(screen.height() * 0.80), 900)
         
         self.resize(width, height)
-        self.setMinimumSize(1000, 700)
+        self.setMinimumSize(1100, 750)
         
-        # Center on screen
+        # Center window
         x = (screen.width() - width) // 2
         y = (screen.height() - height) // 2
         self.move(x, y)
         
-        # Main widget and layout
-        main_widget = QWidget()
-        self.setCentralWidget(main_widget)
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(25, 25, 25, 25)
-        main_layout.setSpacing(20)
+        # Main container
+        container = QWidget()
+        self.setCentralWidget(container)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(25)
         
         # Header
-        header = self.create_header()
-        main_layout.addWidget(header)
+        header_label = QLabel("📊 Dataset Analysis")
+        header_label.setStyleSheet("font-size: 22px; font-weight: bold; color: #1E3A8A;")
+        layout.addWidget(header_label)
         
-        # Stats cards
-        stats = self.create_stats()
-        main_layout.addWidget(stats)
+        filename_label = QLabel(self.dataset.get("filename", ""))
+        filename_label.setStyleSheet("font-size: 16px; color: #6B7280; margin-bottom: 10px;")
+        layout.addWidget(filename_label)
+        
+        # Stats grid - 4 cards in 2x2
+        stats_grid = QGridLayout()
+        stats_grid.setSpacing(20)
+        
+        # Create 4 stat cards
+        card1 = self.create_stat_card("📊", "Total Equipment", "total")
+        card2 = self.create_stat_card("💧", "Avg Flowrate", "flowrate")
+        card3 = self.create_stat_card("⚡", "Avg Pressure", "pressure")
+        card4 = self.create_stat_card("🌡️", "Avg Temperature", "temp")
+        
+        stats_grid.addWidget(card1, 0, 0)
+        stats_grid.addWidget(card2, 0, 1)
+        stats_grid.addWidget(card3, 1, 0)
+        stats_grid.addWidget(card4, 1, 1)
+        
+        layout.addLayout(stats_grid)
         
         # Tabs
-        tabs = self.create_tabs()
-        main_layout.addWidget(tabs)
+        tabs = QTabWidget()
+        tabs.setStyleSheet("""
+            QTabWidget::pane {
+                border: 2px solid #E5E7EB;
+                border-radius: 10px;
+                background-color: white;
+                padding: 20px;
+            }
+            QTabBar::tab {
+                background-color: #F3F4F6;
+                color: #374151;
+                padding: 15px 35px;
+                border: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                margin-right: 8px;
+                font-size: 15px;
+                font-weight: 600;
+                min-width: 150px;
+            }
+            QTabBar::tab:selected {
+                background-color: white;
+                color: #1E3A8A;
+                border-bottom: 3px solid #1E3A8A;
+            }
+            QTabBar::tab:hover:!selected {
+                background-color: #E5E7EB;
+            }
+        """)
+        
+        # Charts tab
+        charts_widget = self.create_charts_tab()
+        tabs.addTab(charts_widget, "📈 Visual Analytics")
+        
+        # Equipment tab
+        equipment_widget = self.create_equipment_tab()
+        tabs.addTab(equipment_widget, "📋 Equipment Data")
+        
+        layout.addWidget(tabs, 1)  # Stretch factor 1
         
         # Close button
-        close_btn = QPushButton("✖ Close")
-        close_btn.setMinimumHeight(45)
-        close_btn.setMinimumWidth(130)
+        close_btn = QPushButton("✖ Close Window")
         close_btn.setStyleSheet("""
             QPushButton {
                 background-color: #6B7280;
                 color: white;
-                padding: 12px 24px;
+                padding: 14px 28px;
                 border-radius: 8px;
-                font-size: 14px;
+                font-size: 15px;
                 font-weight: 600;
+                min-height: 45px;
+                min-width: 150px;
             }
             QPushButton:hover {
                 background-color: #4B5563;
@@ -93,54 +145,27 @@ class DatasetDetailWindow(QMainWindow):
         """)
         close_btn.clicked.connect(self.close)
         
-        button_layout = QHBoxLayout()
-        button_layout.addStretch()
-        button_layout.addWidget(close_btn)
-        main_layout.addLayout(button_layout)
+        btn_layout = QHBoxLayout()
+        btn_layout.addStretch()
+        btn_layout.addWidget(close_btn)
+        layout.addLayout(btn_layout)
         
-        main_widget.setLayout(main_layout)
+        container.setLayout(layout)
         
-        # Stylesheet
+        # Main stylesheet
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f9fafb;
-            }
-            QTabWidget::pane {
-                border: 1px solid #E5E7EB;
-                border-radius: 10px;
-                background-color: white;
-                padding: 15px;
-            }
-            QTabBar::tab {
-                background-color: #F3F4F6;
-                color: #374151;
-                padding: 14px 28px;
-                border: 1px solid #E5E7EB;
-                border-bottom: none;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                margin-right: 6px;
-                font-size: 14px;
-                font-weight: 600;
-                min-width: 120px;
-            }
-            QTabBar::tab:selected {
-                background-color: white;
-                color: #1E3A8A;
-            }
-            QTabBar::tab:hover {
-                background-color: #E5E7EB;
             }
             QTableWidget {
                 background-color: white;
                 border: 1px solid #E5E7EB;
                 border-radius: 8px;
                 gridline-color: #F3F4F6;
-                font-size: 13px;
+                font-size: 14px;
             }
             QTableWidget::item {
-                padding: 12px 10px;
-                border-bottom: 1px solid #F3F4F6;
+                padding: 14px 10px;
             }
             QTableWidget::item:selected {
                 background-color: #DBEAFE;
@@ -149,290 +174,249 @@ class DatasetDetailWindow(QMainWindow):
             QHeaderView::section {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 14px 10px;
+                padding: 16px 10px;
                 border: none;
                 font-weight: 700;
                 font-size: 14px;
             }
         """)
     
-    def create_header(self):
-        """Create header section."""
-        frame = QFrame()
-        layout = QVBoxLayout()
-        layout.setSpacing(8)
-        
-        title = QLabel("📊 Dataset Analysis")
-        title.setStyleSheet("font-size: 20px; font-weight: bold; color: #1E3A8A;")
-        layout.addWidget(title)
-        
-        filename = QLabel(self.dataset.get("filename", ""))
-        filename.setStyleSheet("font-size: 15px; color: #6B7280;")
-        layout.addWidget(filename)
-        
-        frame.setLayout(layout)
-        return frame
-    
-    def create_stats(self):
-        """Create statistics cards."""
-        frame = QFrame()
-        grid = QGridLayout()
-        grid.setSpacing(15)
-        
-        # Card style
-        card_style = """
+    def create_stat_card(self, icon, title, value_key):
+        """Create a single stat card."""
+        card = QFrame()
+        card.setStyleSheet("""
             QFrame {
                 background-color: white;
-                border: 1px solid #E5E7EB;
-                border-radius: 10px;
-                padding: 18px;
+                border: 2px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 20px;
             }
-        """
+        """)
+        card.setMinimumHeight(120)
         
-        # Total Equipment
-        total_card = QFrame()
-        total_card.setStyleSheet(card_style)
-        total_layout = QVBoxLayout()
-        total_icon = QLabel("📊")
-        total_icon.setStyleSheet("font-size: 28px;")
-        total_label = QLabel("Total Equipment")
-        total_label.setStyleSheet("font-size: 13px; color: #6B7280; font-weight: 600;")
-        self.total_value = QLabel("-")
-        self.total_value.setStyleSheet("font-size: 26px; font-weight: bold; color: #1E3A8A; margin-top: 8px;")
-        total_layout.addWidget(total_icon)
-        total_layout.addWidget(total_label)
-        total_layout.addWidget(self.total_value)
-        total_layout.addStretch()
-        total_card.setLayout(total_layout)
-        grid.addWidget(total_card, 0, 0)
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
         
-        # Avg Flowrate
-        flow_card = QFrame()
-        flow_card.setStyleSheet(card_style)
-        flow_layout = QVBoxLayout()
-        flow_icon = QLabel("💧")
-        flow_icon.setStyleSheet("font-size: 28px;")
-        flow_label = QLabel("Avg Flowrate")
-        flow_label.setStyleSheet("font-size: 13px; color: #6B7280; font-weight: 600;")
-        self.flowrate_value = QLabel("-")
-        self.flowrate_value.setStyleSheet("font-size: 26px; font-weight: bold; color: #1E3A8A; margin-top: 8px;")
-        flow_layout.addWidget(flow_icon)
-        flow_layout.addWidget(flow_label)
-        flow_layout.addWidget(self.flowrate_value)
-        flow_layout.addStretch()
-        flow_card.setLayout(flow_layout)
-        grid.addWidget(flow_card, 0, 1)
+        # Icon and title row
+        top_layout = QHBoxLayout()
+        icon_label = QLabel(icon)
+        icon_label.setStyleSheet("font-size: 32px;")
+        top_layout.addWidget(icon_label)
         
-        # Avg Pressure
-        pressure_card = QFrame()
-        pressure_card.setStyleSheet(card_style)
-        pressure_layout = QVBoxLayout()
-        pressure_icon = QLabel("⚡")
-        pressure_icon.setStyleSheet("font-size: 28px;")
-        pressure_label = QLabel("Avg Pressure")
-        pressure_label.setStyleSheet("font-size: 13px; color: #6B7280; font-weight: 600;")
-        self.pressure_value = QLabel("-")
-        self.pressure_value.setStyleSheet("font-size: 26px; font-weight: bold; color: #1E3A8A; margin-top: 8px;")
-        pressure_layout.addWidget(pressure_icon)
-        pressure_layout.addWidget(pressure_label)
-        pressure_layout.addWidget(self.pressure_value)
-        pressure_layout.addStretch()
-        pressure_card.setLayout(pressure_layout)
-        grid.addWidget(pressure_card, 1, 0)
+        title_label = QLabel(title)
+        title_label.setStyleSheet("font-size: 14px; color: #6B7280; font-weight: 600;")
+        top_layout.addWidget(title_label, 1)
         
-        # Avg Temperature
-        temp_card = QFrame()
-        temp_card.setStyleSheet(card_style)
-        temp_layout = QVBoxLayout()
-        temp_icon = QLabel("🌡️")
-        temp_icon.setStyleSheet("font-size: 28px;")
-        temp_label = QLabel("Avg Temperature")
-        temp_label.setStyleSheet("font-size: 13px; color: #6B7280; font-weight: 600;")
-        self.temp_value = QLabel("-")
-        self.temp_value.setStyleSheet("font-size: 26px; font-weight: bold; color: #1E3A8A; margin-top: 8px;")
-        temp_layout.addWidget(temp_icon)
-        temp_layout.addWidget(temp_label)
-        temp_layout.addWidget(self.temp_value)
-        temp_layout.addStretch()
-        temp_card.setLayout(temp_layout)
-        grid.addWidget(temp_card, 1, 1)
+        layout.addLayout(top_layout)
         
-        frame.setLayout(grid)
-        return frame
+        # Value
+        value_label = QLabel("-")
+        value_label.setStyleSheet("font-size: 30px; font-weight: bold; color: #1E3A8A; margin-top: 5px;")
+        layout.addWidget(value_label)
+        
+        card.setLayout(layout)
+        
+        # Store reference
+        if value_key == "total":
+            self.total_value = value_label
+        elif value_key == "flowrate":
+            self.flowrate_value = value_label
+        elif value_key == "pressure":
+            self.pressure_value = value_label
+        elif value_key == "temp":
+            self.temp_value = value_label
+        
+        return card
     
-    def create_tabs(self):
-        """Create tabbed interface."""
-        tabs = QTabWidget()
+    def create_charts_tab(self):
+        """Create charts tab with matplotlib figures."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(25)
+        layout.setContentsMargins(15, 15, 15, 15)
         
-        # Charts tab
-        charts_widget = QWidget()
-        charts_layout = QVBoxLayout()
-        charts_layout.setSpacing(20)
+        # Charts side-by-side
+        charts_layout = QHBoxLayout()
+        charts_layout.setSpacing(25)
         
-        # Title
-        charts_title = QLabel("Visual Analytics")
-        charts_title.setStyleSheet("font-size: 17px; font-weight: bold; color: #374151; margin-bottom: 10px;")
-        charts_layout.addWidget(charts_title)
-        
-        # Charts side by side
-        charts_h_layout = QHBoxLayout()
-        charts_h_layout.setSpacing(20)
-        
-        # Pie chart
-        pie_widget = QWidget()
+        # PIE CHART
+        pie_container = QFrame()
+        pie_container.setStyleSheet("QFrame { background-color: #F9FAFB; border-radius: 10px; padding: 15px; }")
         pie_layout = QVBoxLayout()
+        
         pie_title = QLabel("Equipment Type Distribution")
-        pie_title.setStyleSheet("font-size: 14px; font-weight: 600; color: #374151; text-align: center;")
+        pie_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #374151; margin-bottom: 10px;")
         pie_title.setAlignment(Qt.AlignCenter)
         pie_layout.addWidget(pie_title)
         
-        self.pie_figure = Figure(figsize=(7, 6), dpi=90, facecolor='white')
+        # Create matplotlib figure for pie chart
+        self.pie_figure = Figure(figsize=(6, 5), dpi=100, facecolor='#F9FAFB')
         self.pie_canvas = FigureCanvas(self.pie_figure)
-        self.pie_canvas.setMinimumSize(400, 400)
+        self.pie_canvas.setMinimumSize(450, 400)
         pie_layout.addWidget(self.pie_canvas)
-        pie_widget.setLayout(pie_layout)
-        charts_h_layout.addWidget(pie_widget)
         
-        # Bar chart
-        bar_widget = QWidget()
+        pie_container.setLayout(pie_layout)
+        charts_layout.addWidget(pie_container)
+        
+        # BAR CHART
+        bar_container = QFrame()
+        bar_container.setStyleSheet("QFrame { background-color: #F9FAFB; border-radius: 10px; padding: 15px; }")
         bar_layout = QVBoxLayout()
+        
         bar_title = QLabel("Average Parameters")
-        bar_title.setStyleSheet("font-size: 14px; font-weight: 600; color: #374151; text-align: center;")
+        bar_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #374151; margin-bottom: 10px;")
         bar_title.setAlignment(Qt.AlignCenter)
         bar_layout.addWidget(bar_title)
         
-        self.bar_figure = Figure(figsize=(7, 6), dpi=90, facecolor='white')
+        # Create matplotlib figure for bar chart
+        self.bar_figure = Figure(figsize=(6, 5), dpi=100, facecolor='#F9FAFB')
         self.bar_canvas = FigureCanvas(self.bar_figure)
-        self.bar_canvas.setMinimumSize(400, 400)
+        self.bar_canvas.setMinimumSize(450, 400)
         bar_layout.addWidget(self.bar_canvas)
-        bar_widget.setLayout(bar_layout)
-        charts_h_layout.addWidget(bar_widget)
         
-        charts_layout.addLayout(charts_h_layout)
-        charts_widget.setLayout(charts_layout)
-        tabs.addTab(charts_widget, "📈 Charts")
+        bar_container.setLayout(bar_layout)
+        charts_layout.addWidget(bar_container)
         
-        # Equipment tab
-        equipment_widget = QWidget()
-        equipment_layout = QVBoxLayout()
-        equipment_layout.setSpacing(15)
+        layout.addLayout(charts_layout, 1)
+        widget.setLayout(layout)
+        return widget
+    
+    def create_equipment_tab(self):
+        """Create equipment table tab."""
+        widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        layout.setContentsMargins(15, 15, 15, 15)
         
-        equipment_title = QLabel("Equipment Details")
-        equipment_title.setStyleSheet("font-size: 17px; font-weight: bold; color: #374151; margin-bottom: 10px;")
-        equipment_layout.addWidget(equipment_title)
+        title = QLabel("Equipment Details")
+        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #374151; margin-bottom: 10px;")
+        layout.addWidget(title)
         
+        # Table
         self.equipment_table = QTableWidget()
         self.equipment_table.setColumnCount(6)
         self.equipment_table.setHorizontalHeaderLabels([
-            "Name", "Type", "Flowrate", "Pressure", "Temperature", "Status"
+            "Equipment Name", "Type", "Flowrate", "Pressure", "Temperature", "Status"
         ])
         self.equipment_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.equipment_table.verticalHeader().setDefaultSectionSize(50)
+        self.equipment_table.verticalHeader().setDefaultSectionSize(55)
         self.equipment_table.setAlternatingRowColors(True)
         self.equipment_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.equipment_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        equipment_layout.addWidget(self.equipment_table)
         
-        equipment_widget.setLayout(equipment_layout)
-        tabs.addTab(equipment_widget, "📋 Equipment Details")
-        
-        return tabs
+        layout.addWidget(self.equipment_table, 1)
+        widget.setLayout(layout)
+        return widget
     
     def load_data(self):
-        """Load analytics and equipment data."""
+        """Load data from API."""
         try:
             # Analytics
-            analytics_result = self.api_client.get_analytics(self.dataset["id"])
-            if analytics_result["success"]:
-                self.analytics = analytics_result["data"]
+            result = self.api_client.get_analytics(self.dataset["id"])
+            if result["success"]:
+                self.analytics = result["data"]
                 self.update_stats()
                 self.update_charts()
             
             # Equipment
-            equipment_result = self.api_client.get_equipment(self.dataset["id"])
-            if equipment_result["success"]:
-                self.equipment = equipment_result["data"]
+            result = self.api_client.get_equipment(self.dataset["id"])
+            if result["success"]:
+                self.equipment = result["data"]
                 self.populate_table()
             
-            logger.info(f"Loaded data for: {self.dataset.get('filename')}")
+            logger.info(f"Data loaded for: {self.dataset.get('filename')}")
         except Exception as e:
-            logger.error(f"Failed to load data: {e}")
+            logger.error(f"Error loading data: {e}")
     
     def update_stats(self):
-        """Update stat cards."""
-        if self.analytics:
+        """Update stat card values."""
+        if self.analytics and self.total_value:
             self.total_value.setText(str(self.analytics.get('total_equipment', 0)))
             self.flowrate_value.setText(f"{self.analytics.get('avg_flowrate', 0):.2f}")
             self.pressure_value.setText(f"{self.analytics.get('avg_pressure', 0):.2f}")
             self.temp_value.setText(f"{self.analytics.get('avg_temperature', 0):.2f}°C")
     
     def update_charts(self):
-        """Update charts with clean styling."""
+        """Draw matplotlib charts."""
         if not self.analytics:
             return
         
-        # Colors
-        colors = ['#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', '#DBEAFE', '#F97316', '#FB923C']
+        # Professional color palette
+        colors = ['#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', '#DBEAFE', '#F97316', '#FB923C', '#FDBA74']
         
-        # Pie chart
+        # PIE CHART
         distribution = self.analytics.get("equipment_type_distribution", {})
         if distribution:
             self.pie_figure.clear()
             ax = self.pie_figure.add_subplot(111)
+            ax.set_facecolor('#F9FAFB')
+            
             wedges, texts, autotexts = ax.pie(
-                distribution.values(),
-                labels=distribution.keys(),
+                list(distribution.values()),
+                labels=list(distribution.keys()),
                 autopct='%1.1f%%',
                 colors=colors[:len(distribution)],
                 startangle=90,
-                textprops={'fontsize': 12, 'weight': 'bold', 'color': '#1F2937'}
+                textprops={'fontsize': 11, 'weight': 'bold'},
+                wedgeprops={'edgecolor': 'white', 'linewidth': 2}
             )
-            # Make percentage text white
+            
+            # Style percentage text
             for autotext in autotexts:
                 autotext.set_color('white')
+                autotext.set_fontsize(10)
                 autotext.set_weight('bold')
-                autotext.set_fontsize(11)
+            
             ax.axis('equal')
-            self.pie_figure.tight_layout(pad=2)
+            self.pie_figure.tight_layout(pad=1)
             self.pie_canvas.draw()
         
-        # Bar chart
+        # BAR CHART
         self.bar_figure.clear()
         ax = self.bar_figure.add_subplot(111)
-        parameters = ['Flowrate', 'Pressure', 'Temperature']
+        ax.set_facecolor('#F9FAFB')
+        self.bar_figure.patch.set_facecolor('#F9FAFB')
+        
+        params = ['Flowrate', 'Pressure', 'Temperature']
         values = [
             self.analytics.get('avg_flowrate', 0),
             self.analytics.get('avg_pressure', 0),
             self.analytics.get('avg_temperature', 0)
         ]
-        bars = ax.bar(parameters, values, color=['#1E3A8A', '#3B82F6', '#60A5FA'], width=0.5)
+        
+        bars = ax.bar(params, values, color=['#1E3A8A', '#3B82F6', '#60A5FA'], width=0.5, edgecolor='white', linewidth=2)
+        
         ax.set_ylabel("Value", fontsize=12, weight='bold', color='#374151')
-        ax.grid(axis='y', alpha=0.3, linestyle='--', linewidth=0.8)
+        ax.grid(axis='y', alpha=0.3, linestyle='--', linewidth=1)
         ax.set_axisbelow(True)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.tick_params(labelsize=11, colors='#374151')
+        ax.spines['left'].set_color('#E5E7EB')
+        ax.spines['bottom'].set_color('#E5E7EB')
+        ax.tick_params(colors='#374151', labelsize=11)
         
-        # Add value labels on bars
+        # Add value labels
         for bar in bars:
             height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height,
+            ax.text(bar.get_x() + bar.get_width()/2., height + (max(values) * 0.02),
                    f'{height:.1f}',
                    ha='center', va='bottom', fontsize=11, weight='bold', color='#1F2937')
         
-        self.bar_figure.tight_layout(pad=2)
+        self.bar_figure.tight_layout(pad=1)
         self.bar_canvas.draw()
     
     def populate_table(self):
-        """Populate equipment table."""
+        """Fill equipment table."""
         self.equipment_table.setRowCount(len(self.equipment))
         
         for row, eq in enumerate(self.equipment):
             # Name
-            self.equipment_table.setItem(row, 0, QTableWidgetItem(eq.get("equipment_name", "")))
+            name_item = QTableWidgetItem(eq.get("equipment_name", ""))
+            self.equipment_table.setItem(row, 0, name_item)
             
             # Type
-            self.equipment_table.setItem(row, 1, QTableWidgetItem(eq.get("equipment_type", "")))
+            type_item = QTableWidgetItem(eq.get("equipment_type", ""))
+            self.equipment_table.setItem(row, 1, type_item)
             
             # Flowrate
             flow_item = QTableWidgetItem(f"{eq.get('flowrate', 0):.2f}")
@@ -454,11 +438,13 @@ class DatasetDetailWindow(QMainWindow):
             status = "⚠️ Outlier" if is_outlier else "✅ Normal"
             status_item = QTableWidgetItem(status)
             status_item.setTextAlignment(Qt.AlignCenter)
+            
             if is_outlier:
                 status_item.setForeground(QColor("#DC2626"))
-                font = status_item.font()
+                font = QFont()
                 font.setBold(True)
                 status_item.setFont(font)
+            
             self.equipment_table.setItem(row, 5, status_item)
 
 
