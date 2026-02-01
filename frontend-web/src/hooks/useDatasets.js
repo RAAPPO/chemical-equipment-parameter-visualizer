@@ -3,7 +3,7 @@
  * Encapsulates data fetching logic and state management
  */
 import { useState, useEffect, useCallback } from 'react';
-import { datasetAPI } from '../services/api';
+import { datasetAPI, equipmentAPI } from '../services/api';
 
 export const useDatasets = () => {
   const [datasets, setDatasets] = useState([]);
