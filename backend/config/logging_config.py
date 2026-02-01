@@ -1,4 +1,3 @@
-cat > backend/config/logging_config.py << 'EOF'
 """
 Centralized logging configuration.
 Industry standard: Structured logging with rotation.
@@ -76,4 +75,3 @@ LOGGING = {
         'level': 'INFO',
     },
 }
-EOF
