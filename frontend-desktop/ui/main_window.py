@@ -4,7 +4,7 @@ from datetime import datetime
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QTableWidget, QTableWidgetItem,
                              QFileDialog, QMessageBox, QHeaderView, QFrame,
-                             QApplication)
+                             QApplication, QDesktopWidget)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QCloseEvent, QKeyEvent
 
@@ -45,18 +45,47 @@ class MainWindow(QMainWindow):
         self.activateWindow()
         
     def init_ui(self):
-        """Initialize the UI."""
+        """Initialize the UI with dynamic sizing."""
         self.setWindowTitle("Chemical Equipment Parameter Visualizer")
-        self.setGeometry(100, 100, 1400, 800)
+        
+        # Get screen geometry and calculate appropriate window size
+        from PyQt5.QtWidgets import QDesktopWidget
+        screen = QDesktopWidget().screenGeometry()
+        
+        # Use 80% of screen width and height for better fit
+        window_width = int(screen.width() * 0.80)
+        window_height = int(screen.height() * 0.80)
+        
+        # Minimum size constraints
+        min_width = 1000
+        min_height = 600
+        
+        # Maximum size constraints  
+        max_width = 1600
+        max_height = 1000
+        
+        # Apply constraints
+        window_width = max(min_width, min(window_width, max_width))
+        window_height = max(min_height, min(window_height, max_height))
+        
+        # Set size and make it resizable
+        self.resize(window_width, window_height)
+        self.setMinimumSize(min_width, min_height)
+        
+        # Center window on screen
+        center_x = (screen.width() - window_width) // 2
+        center_y = (screen.height() - window_height) // 2
+        self.move(center_x, center_y)
         
         # Central widget
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         
-        # Main layout
+        # Main layout with responsive margins
         main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(30, 25, 30, 25)
-        main_layout.setSpacing(25)
+        margin = max(20, int(window_width * 0.02))  # Dynamic margin (2% of width)
+        main_layout.setContentsMargins(margin, margin, margin, margin)
+        main_layout.setSpacing(20)
         
         # Header
         header = self.create_header()
@@ -78,41 +107,37 @@ class MainWindow(QMainWindow):
 
         central_widget.setLayout(main_layout)
         
-        # Apply modern stylesheet with better spacing
+        # Apply stylesheet
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #f9fafb;
             }
             QLabel#title {
                 color: #1E3A8A;
-                font-size: 22px;
+                font-size: 20px;
                 font-weight: bold;
-                line-height: 1.4;
+                line-height: 1.3;
             }
             QLabel#username {
                 color: #6B7280;
-                font-size: 15px;
+                font-size: 14px;
                 padding: 5px 10px;
             }
             QPushButton {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 12px 24px;
+                padding: 10px 20px;
                 border: none;
                 border-radius: 8px;
-                font-size: 14px;
+                font-size: 13px;
                 font-weight: 600;
-                min-height: 40px;
+                min-height: 38px;
             }
             QPushButton:hover {
                 background-color: #1E40AF;
-                transform: translateY(-1px);
             }
             QPushButton:pressed {
                 background-color: #1E3A8A;
-            }
-            QPushButton:disabled {
-                background-color: #9CA3AF;
             }
             QTableWidget {
                 background-color: white;
@@ -123,39 +148,36 @@ class MainWindow(QMainWindow):
                 padding: 5px;
             }
             QTableWidget::item {
-                padding: 12px 8px;
+                padding: 10px 8px;
                 border-bottom: 1px solid #F3F4F6;
             }
             QTableWidget::item:selected {
                 background-color: #DBEAFE;
                 color: #1E3A8A;
             }
-            QTableWidget::item:hover {
-                background-color: #F9FAFB;
-            }
             QHeaderView::section {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 15px 10px;
+                padding: 12px 10px;
                 border: none;
                 font-weight: 700;
-                font-size: 14px;
+                font-size: 13px;
             }
             QStatusBar {
                 background-color: #F9FAFB;
                 color: #6B7280;
                 border-top: 1px solid #E5E7EB;
-                padding: 8px;
-                font-size: 13px;
+                padding: 6px;
+                font-size: 12px;
             }
             QMenuBar {
                 background-color: white;
                 border-bottom: 1px solid #E5E7EB;
-                padding: 8px;
+                padding: 6px;
                 font-size: 13px;
             }
             QMenuBar::item {
-                padding: 10px 15px;
+                padding: 8px 12px;
                 background-color: transparent;
                 border-radius: 6px;
             }
@@ -166,10 +188,10 @@ class MainWindow(QMainWindow):
                 background-color: white;
                 border: 1px solid #E5E7EB;
                 border-radius: 8px;
-                padding: 8px;
+                padding: 6px;
             }
             QMenu::item {
-                padding: 10px 35px 10px 25px;
+                padding: 8px 30px 8px 20px;
                 border-radius: 6px;
                 font-size: 13px;
             }
@@ -233,9 +255,9 @@ class MainWindow(QMainWindow):
         return menubar
     
     def create_header(self):
-        """Create header section."""
+        """Create header section with responsive sizing."""
         header_frame = QFrame()
-        header_frame.setMinimumHeight(80)
+        header_frame.setMinimumHeight(70)
         header_layout = QHBoxLayout()
         header_layout.setContentsMargins(10, 10, 10, 10)
         
@@ -243,7 +265,7 @@ class MainWindow(QMainWindow):
         title.setObjectName("title")
         title.setStyleSheet("""
             color: #1E3A8A;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             line-height: 1.3;
         """)
@@ -253,18 +275,18 @@ class MainWindow(QMainWindow):
         
         username_label = QLabel(f"👤 {self.username}")
         username_label.setObjectName("username")
-        username_label.setStyleSheet("color: #6B7280; font-size: 15px;")
+        username_label.setStyleSheet("color: #6B7280; font-size: 14px;")
         header_layout.addWidget(username_label)
         
         logout_btn = QPushButton("🚪 Logout")
         logout_btn.setToolTip("Logout and return to login screen (Ctrl+L)")
-        logout_btn.setMinimumHeight(40)
-        logout_btn.setMinimumWidth(120)
+        logout_btn.setMinimumHeight(38)
+        logout_btn.setMinimumWidth(110)
         logout_btn.clicked.connect(self.handle_logout)
         logout_btn.setStyleSheet("""
             background-color: #DC2626;
-            padding: 10px 20px;
-            font-size: 14px;
+            padding: 8px 16px;
+            font-size: 13px;
         """)
         header_layout.addWidget(logout_btn)
         
@@ -272,15 +294,15 @@ class MainWindow(QMainWindow):
         return header_frame
     
     def create_toolbar(self):
-        """Create toolbar with action buttons."""
+        """Create toolbar with responsive buttons."""
         toolbar_frame = QFrame()
-        toolbar_frame.setMinimumHeight(60)
+        toolbar_frame.setMinimumHeight(55)
         toolbar_layout = QHBoxLayout()
         toolbar_layout.setContentsMargins(10, 10, 10, 10)
         
         toolbar_label = QLabel("📊 Datasets")
         toolbar_label.setStyleSheet("""
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
             color: #374151;
         """)
@@ -290,15 +312,15 @@ class MainWindow(QMainWindow):
         
         upload_btn = QPushButton("📁 Upload CSV")
         upload_btn.setToolTip("Upload a new CSV dataset (Ctrl+O)")
-        upload_btn.setMinimumHeight(42)
-        upload_btn.setMinimumWidth(150)
+        upload_btn.setMinimumHeight(40)
+        upload_btn.setMinimumWidth(140)
         upload_btn.clicked.connect(self.handle_upload)
         toolbar_layout.addWidget(upload_btn)
         
         refresh_btn = QPushButton("🔄 Refresh")
         refresh_btn.setToolTip("Refresh dataset list (Ctrl+R)")
-        refresh_btn.setMinimumHeight(42)
-        refresh_btn.setMinimumWidth(130)
+        refresh_btn.setMinimumHeight(40)
+        refresh_btn.setMinimumWidth(120)
         refresh_btn.clicked.connect(self.load_datasets)
         toolbar_layout.addWidget(refresh_btn)
         
@@ -306,23 +328,22 @@ class MainWindow(QMainWindow):
         return toolbar_frame
     
     def create_table(self):
-        """Create datasets table."""
+        """Create datasets table with responsive sizing."""
         table = QTableWidget()
         table.setColumnCount(5)
         table.setHorizontalHeaderLabels([
             "📄 Filename",
-            "📊 Equipment Count",
+            "📊 Equipment",
             "📅 Upload Date",
             "🔍 Actions",
             "📥 PDF"
         ])
         table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        table.verticalHeader().setDefaultSectionSize(60)
+        table.verticalHeader().setDefaultSectionSize(55)
         table.setSelectionBehavior(QTableWidget.SelectRows)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setAlternatingRowColors(True)
         table.setShowGrid(True)
-        table.setMinimumHeight(400)
         return table
     
     def load_datasets(self):
@@ -492,6 +513,7 @@ class MainWindow(QMainWindow):
         credits.setStyleSheet("font-size: 10px; color: #6B7280; margin-top: 20px;")
         layout.addWidget(credits)
         
+        # Close button
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(dialog.close)
         layout.addWidget(close_btn)
@@ -520,9 +542,11 @@ class MainWindow(QMainWindow):
         """Handle window close event (X button or Alt+F4)."""
         reply = QMessageBox.question(
             self,
-            "Confirm Exit",
-            "Are you sure you want to close the application?\n"
-            "Click 'Logout' if you want to return to login screen.",
+            "Exit Application",
+            "Do you want to exit the application?\n\n"
+            "• Click 'Yes' to quit completely\n"
+            "• Click 'No' to stay in the app\n"
+            "• Use 'File → Logout' to return to login",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No
         )

@@ -1,6 +1,6 @@
 import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QMessageBox)
+                             QLineEdit, QPushButton, QMessageBox, QDesktopWidget)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QPalette, QColor
 
@@ -21,6 +21,12 @@ class LoginWindow(QWidget):
         """Initialize the UI."""
         self.setWindowTitle("CEPV - Login")
         self.setFixedSize(450, 380)
+        
+        # Center window on screen
+        screen = QDesktopWidget().screenGeometry()
+        x = (screen.width() - 450) // 2
+        y = (screen.height() - 380) // 2
+        self.move(x, y)
         
         # Main layout
         layout = QVBoxLayout()
@@ -48,14 +54,14 @@ class LoginWindow(QWidget):
                 
         layout.addSpacing(10)
         
-        # Username
+        # Username input
         self.username_input = QLineEdit()
         self.username_input.setPlaceholderText("Enter username")
         self.username_input.setText("testuser")  # Default for demo
         self.username_input.setMinimumHeight(40)
         layout.addWidget(self.username_input)
         
-        # Password
+        # Password input
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Enter password")
         self.password_input.setEchoMode(QLineEdit.Password)
@@ -129,6 +135,7 @@ class LoginWindow(QWidget):
         
         logger.info(f"Attempting login for user: {username}")
         
+        # Attempt login via API client
         result = self.api_client.login(username, password)
         
         if result["success"]:
