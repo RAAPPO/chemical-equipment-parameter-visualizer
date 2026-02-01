@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { datasetAPI, equipmentAPI } from '../services/api';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
@@ -39,7 +39,8 @@ export default function DatasetDetail() {
     }
   };
 
-  const handleDownloadPDF = async () => {
+  // Memoized PDF download handler
+  const handleDownloadPDF = useCallback(async () => {
     try {
       const response = await datasetAPI.downloadPDF(id);
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -53,7 +54,36 @@ export default function DatasetDetail() {
     } catch (error) {
       alert('Failed to download PDF');
     }
-  };
+  }, [id, dataset]);
+
+  // Prepare chart data (only recalculate when analytics changes)
+  const pieData = useMemo(() => ({
+    labels: Object.keys(analytics?.equipment_type_distribution || {}),
+    datasets: [
+      {
+        data: Object.values(analytics?.equipment_type_distribution || {}),
+        backgroundColor: [
+          '#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', '#DBEAFE',
+          '#F97316', '#FB923C', '#FDBA74'
+        ],
+      },
+    ],
+  }), [analytics]);
+
+  const barData = useMemo(() => ({
+    labels: ['Flowrate', 'Pressure', 'Temperature'],
+    datasets: [
+      {
+        label: 'Average Values',
+        data: [
+          analytics?.avg_flowrate || 0,
+          analytics?.avg_pressure || 0,
+          analytics?.avg_temperature || 0,
+        ],
+        backgroundColor: ['#1E3A8A', '#3B82F6', '#60A5FA'],
+      },
+    ],
+  }), [analytics]);
 
   if (loading) {
     return (
@@ -80,35 +110,6 @@ export default function DatasetDetail() {
       </div>
     );
   }
-
-  // Prepare chart data
-  const pieData = {
-    labels: Object.keys(analytics?.equipment_type_distribution || {}),
-    datasets: [
-      {
-        data: Object.values(analytics?.equipment_type_distribution || {}),
-        backgroundColor: [
-          '#1E3A8A', '#3B82F6', '#60A5FA', '#93C5FD', '#DBEAFE',
-          '#F97316', '#FB923C', '#FDBA74'
-        ],
-      },
-    ],
-  };
-
-  const barData = {
-    labels: ['Flowrate', 'Pressure', 'Temperature'],
-    datasets: [
-      {
-        label: 'Average Values',
-        data: [
-          analytics?.avg_flowrate || 0,
-          analytics?.avg_pressure || 0,
-          analytics?.avg_temperature || 0,
-        ],
-        backgroundColor: ['#1E3A8A', '#3B82F6', '#60A5FA'],
-      },
-    ],
-  };
 
   return (
     <div className="min-h-screen bg-gray-100">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { datasetAPI } from '../services/api';
 import PropTypes from 'prop-types';
 
@@ -7,6 +7,18 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen, onClose]);
 
   const handleDrag = (e) => {
     e.preventDefault();
@@ -67,9 +79,20 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4">
-        <h2 className="text-2xl font-bold mb-6 text-gray-800">Upload CSV Dataset</h2>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upload-modal-title"
+    >
+      <div
+        className="bg-white rounded-lg shadow-2xl p-8 max-w-md w-full mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 id="upload-modal-title" className="text-2xl font-bold mb-6 text-gray-800">
+          Upload CSV Dataset
+        </h2>
 
         {/* Drag & Drop Area */}
         <div
@@ -85,6 +108,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
             stroke="currentColor"
             fill="none"
             viewBox="0 0 48 48"
+            aria-hidden="true"
           >
             <path
               d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
@@ -121,6 +145,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
             <button
               onClick={() => setFile(null)}
               className="text-red-600 hover:text-red-800"
+              aria-label="Remove selected file"
             >
               ✕
             </button>
@@ -129,7 +154,7 @@ export default function UploadModal({ isOpen, onClose, onSuccess }) {
 
         {/* Error Message */}
         {error && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm" role="alert">
             {error}
           </div>
         )}
