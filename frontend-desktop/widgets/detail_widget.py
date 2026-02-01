@@ -1,16 +1,19 @@
+"""
+Dataset Detail Window - WORLD-CLASS INDUSTRIAL DESIGN
+"""
 import logging
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QPushButton, QFrame,
-                             QTabWidget, QHeaderView, QApplication, QGridLayout)
+                             QTabWidget, QHeaderView, QGridLayout, QApplication)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QColor
+from PyQt5.QtGui import QColor, QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 logger = logging.getLogger(__name__)
 
 class DatasetDetailWindow(QMainWindow):
-    """Refined analysis dashboard for specific datasets."""
+    """Symmetrical industrial analytics dashboard with high-visibility visualizations."""
     
     def __init__(self, api_client, dataset, parent=None):
         super().__init__(parent)
@@ -24,207 +27,221 @@ class DatasetDetailWindow(QMainWindow):
         self.load_data()
     
     def init_ui(self):
-        """Construct the dashboard layout with high-density components."""
-        self.setWindowTitle(f"Analysis - {self.dataset.get('filename')}")
-        screen = QApplication.primaryScreen().geometry()
-        self.resize(int(screen.width() * 0.8), int(screen.height() * 0.8))
-        self.setMinimumSize(950, 650)
+        """Initialize a balanced, high-density command center interface."""
+        self.resize(1150, 850)
+        central = QWidget()
+        central.setStyleSheet("background-color: #F8FAFC;") # Slate-50 background
+        self.setCentralWidget(central)
         
-        container = QWidget()
-        self.setCentralWidget(container)
-        main_layout = QVBoxLayout(container)
-        main_layout.setContentsMargins(15, 15, 15, 15)
-        main_layout.setSpacing(10)
+        layout = QVBoxLayout(central)
+        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setSpacing(20)
         
-        # Header Section
-        header_widget = QWidget()
-        header_layout = QHBoxLayout(header_widget)
-        header_layout.setContentsMargins(0, 0, 0, 5)
+        # === COMMAND HEADER ===
+        head = QHBoxLayout()
+        title_v = QVBoxLayout()
         
-        title_vbox = QVBoxLayout()
-        header_title = QLabel(self.dataset.get('filename', 'Dataset Analysis'))
-        header_title.setStyleSheet("font-size: 22px; font-weight: 800; color: #111827;")
-        subtitle = QLabel(f"Dataset ID: {self.dataset.get('id', 'N/A')}")
-        subtitle.setStyleSheet("font-size: 12px; color: #6B7280; font-weight: 400;")
-        title_vbox.addWidget(header_title)
-        title_vbox.addWidget(subtitle)
+        # Balanced typography for title
+        self.title_lbl = QLabel(f"Analysis: {self.dataset.get('filename', 'Dataset')}")
+        self.title_lbl.setStyleSheet("font-size: 22px; font-weight: 800; color: #0F172A;")
         
-        header_layout.addLayout(title_vbox)
-        header_layout.addStretch()
+        # Symmetrical subtitle with equipment count
+        self.count_lbl = QLabel("Monitoring system units...")
+        self.count_lbl.setStyleSheet("font-size: 13px; color: #64748B; font-weight: 500;")
         
-        close_btn = QPushButton("✖ Close")
-        close_btn.setFixedWidth(100)
-        close_btn.setStyleSheet("""
-            QPushButton { background-color: #F3F4F6; color: #374151; border-radius: 6px; padding: 8px; font-weight: 600; border: 1px solid #E5E7EB; }
-            QPushButton:hover { background-color: #E5E7EB; }
+        title_v.addWidget(self.title_lbl)
+        title_v.addWidget(self.count_lbl)
+        head.addLayout(title_v)
+        head.addStretch()
+        
+        # High-contrast action button
+        exit_btn = QPushButton("✖  Close View")
+        exit_btn.setFixedSize(130, 38)
+        exit_btn.setCursor(Qt.PointingHandCursor)
+        exit_btn.clicked.connect(self.close)
+        exit_btn.setStyleSheet("""
+            QPushButton { 
+                background: white; border: 1.5px solid #E2E8F0; border-radius: 8px; 
+                font-weight: 700; color: #475569; font-size: 12px;
+            }
+            QPushButton:hover { background: #F1F5F9; border-color: #CBD5E1; color: #1E293B; }
         """)
-        close_btn.clicked.connect(self.close)
-        header_layout.addWidget(close_btn)
-        main_layout.addWidget(header_widget)
+        head.addWidget(exit_btn)
+        layout.addLayout(head)
 
-        # Stat Summary Grid
+        # === SYMMETRICAL STATS GRID ===
         stats_frame = QFrame()
-        stats_frame.setObjectName("StatsFrame")
-        stats_layout = QHBoxLayout(stats_frame)
-        stats_layout.setContentsMargins(15, 15, 15, 15)
-        stats_layout.setSpacing(20)
+        stats_frame.setStyleSheet("background: white; border: 1px solid #E2E8F0; border-radius: 12px;")
+        grid_layout = QHBoxLayout(stats_frame)
+        grid_layout.setContentsMargins(25, 20, 25, 20)
         
-        stats_config = [
-            ("Total Equipment", "total", "#1E40AF"),
-            ("Avg Flowrate", "flowrate", "#2563EB"),
-            ("Avg Pressure", "pressure", "#3B82F6"),
-            ("Avg Temperature", "temp", "#EA580C")
+        metrics = [
+            ("UNITS", "total", "#6366F1"),       # Indigo
+            ("AVG FLOWRATE", "flowrate", "#0EA5E9"), # Sky
+            ("AVG PRESSURE", "pressure", "#10B981"), # Emerald
+            ("AVG TEMP", "temp", "#F59E0B")      # Amber
         ]
         
-        for title, key, color in stats_config:
-            card = QFrame()
-            card_layout = QVBoxLayout(card)
-            card_layout.setContentsMargins(0, 0, 0, 0)
-            card_layout.setSpacing(2)
+        for name, key, color in metrics:
+            m_v = QVBoxLayout()
+            n_lbl = QLabel(name)
+            n_lbl.setStyleSheet("font-size: 10px; font-weight: 800; color: #94A3B8; letter-spacing: 1px;")
             
-            title_lbl = QLabel(title.upper())
-            title_lbl.setStyleSheet("font-size: 11px; font-weight: 700; color: #6B7280; letter-spacing: 0.5px;")
-            val_lbl = QLabel("-")
-            val_lbl.setStyleSheet(f"font-size: 26px; font-weight: 800; color: {color};")
+            # Scaled down metric value for better symmetry
+            v_lbl = QLabel("-")
+            v_lbl.setStyleSheet(f"font-size: 28px; font-weight: 800; color: {color};")
             
-            card_layout.addWidget(title_lbl)
-            card_layout.addWidget(val_lbl)
-            self.stat_values[key] = val_lbl
-            stats_layout.addWidget(card)
-        
-        main_layout.addWidget(stats_frame)
-        
-        # Tabs for Visualization and Data
-        self.tabs = QTabWidget()
-        self.tabs.addTab(self.create_charts_tab(), "📊 Visual Analytics")
-        self.tabs.addTab(self.create_equipment_tab(), "📋 Data Explorer")
-        main_layout.addWidget(self.tabs, 1)
-        
-        self.apply_stylesheet()
+            self.stat_values[key] = v_lbl
+            m_v.addWidget(n_lbl)
+            m_v.addWidget(v_lbl)
+            grid_layout.addLayout(m_v)
+            if key != "temp": grid_layout.addStretch()
+            
+        layout.addWidget(stats_frame)
 
-    def create_charts_tab(self):
-        """Analytics visualization tab."""
-        widget = QWidget()
-        layout = QGridLayout(widget)
-        layout.setContentsMargins(10, 15, 10, 10)
-        layout.setSpacing(15)
+        # === TABBED CONTENT (HIGH DISTINCTION) ===
+        self.tabs = QTabWidget()
+        self.tabs.setStyleSheet("""
+            QTabWidget::pane { border: 1px solid #E2E8F0; border-radius: 12px; background: white; top: -1px; }
+            QTabBar::tab { 
+                padding: 12px 40px; font-weight: 700; color: #64748B; background: #E2E8F0; 
+                border-top-left-radius: 8px; border-top-right-radius: 8px; margin-right: 4px;
+            }
+            QTabBar::tab:selected { 
+                background: white; color: #4F46E5; 
+                border-bottom: 4px solid #4F46E5; /* Bold active indicator */
+            }
+            QTabBar::tab:hover:!selected { background: #CBD5E1; }
+        """)
         
-        pie_container = QFrame()
-        pie_container.setStyleSheet("background-color: white; border: 1px solid #F3F4F6; border-radius: 10px;")
-        pie_vbox = QVBoxLayout(pie_container)
-        pie_title = QLabel("Equipment Distribution")
-        pie_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 5px;")
-        pie_title.setAlignment(Qt.AlignCenter)
-        pie_vbox.addWidget(pie_title)
+        self.tabs.addTab(self.create_visual_tab(), "📊  Visual Analytics")
+        self.tabs.addTab(self.create_equipment_tab(), "📋  Equipment Details")
+        layout.addWidget(self.tabs, 1)
+
+    def create_visual_tab(self):
+        """Visual analytics with expanded chart area."""
+        w = QWidget()
+        l = QHBoxLayout(w)
+        l.setContentsMargins(15, 15, 15, 15)
+        l.setSpacing(20)
         
-        self.pie_figure = Figure(figsize=(5, 4), dpi=100, facecolor='white')
-        self.pie_canvas = FigureCanvas(self.pie_figure)
-        pie_vbox.addWidget(self.pie_canvas)
-        layout.addWidget(pie_container, 0, 0)
+        # Charts take advantage of higher figsize
+        self.pie_canvas = self.make_chart_box("Equipment Type Breakdown", l)
+        self.bar_canvas = self.make_chart_box("Mean System Averages", l)
+        return w
+
+    def make_chart_box(self, title, layout):
+        container = QFrame()
+        container.setStyleSheet("background: white; border: 1px solid #F1F5F9; border-radius: 10px;")
+        v = QVBoxLayout(container)
         
-        bar_container = QFrame()
-        bar_container.setStyleSheet("background-color: white; border: 1px solid #F3F4F6; border-radius: 10px;")
-        bar_vbox = QVBoxLayout(bar_container)
-        bar_title = QLabel("Mean Parameters")
-        bar_title.setStyleSheet("font-size: 14px; font-weight: 700; color: #374151; margin-bottom: 5px;")
-        bar_title.setAlignment(Qt.AlignCenter)
-        bar_vbox.addWidget(bar_title)
+        lbl = QLabel(title)
+        lbl.setStyleSheet("font-weight: 800; color: #1E293B; font-size: 14px; margin-bottom: 5px;")
+        lbl.setAlignment(Qt.AlignCenter)
+        v.addWidget(lbl)
         
-        self.bar_figure = Figure(figsize=(5, 4), dpi=100, facecolor='white')
-        self.bar_canvas = FigureCanvas(self.bar_figure)
-        bar_vbox.addWidget(self.bar_canvas)
-        layout.addWidget(bar_container, 0, 1)
-        
-        return widget
+        # Scaling charts up for industry visibility
+        fig = Figure(figsize=(7, 6), dpi=95, facecolor='white')
+        canvas = FigureCanvas(fig)
+        v.addWidget(canvas)
+        layout.addWidget(container)
+        return canvas
 
     def create_equipment_tab(self):
-        """Equipment details table tab."""
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        self.equipment_table = QTableWidget()
-        self.equipment_table.setColumnCount(6)
-        self.equipment_table.setHorizontalHeaderLabels(["Name", "Type", "Flow (m³/h)", "Press (bar)", "Temp (°C)", "Condition"])
-        self.equipment_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.equipment_table.setShowGrid(False)
-        self.equipment_table.verticalHeader().setVisible(False)
-        layout.addWidget(self.equipment_table)
-        return widget
-
-    def apply_stylesheet(self):
-        """Apply dashboard-specific styles."""
-        self.setStyleSheet("""
-            QMainWindow { background-color: #F9FAFB; }
-            #StatsFrame { background-color: white; border: 1px solid #E5E7EB; border-radius: 12px; }
-            QTabWidget::pane { border: 1px solid #E5E7EB; border-radius: 12px; background-color: white; }
-            QTabBar::tab { padding: 10px 25px; margin: 5px; font-weight: 600; border-radius: 6px; }
-            QTabBar::tab:selected { background-color: #EFF6FF; color: #2563EB; }
+        """Detailed equipment table with industrial status indicators."""
+        w = QWidget()
+        l = QVBoxLayout(w)
+        l.setContentsMargins(10, 10, 10, 10)
+        
+        self.table = QTableWidget()
+        self.table.setColumnCount(6)
+        self.table.setHorizontalHeaderLabels([
+            "Unit Name", "Category", "Flow (m³/h)", "Press (bar)", "Temp (°C)", "System Status"
+        ])
+        
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        header.setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        
+        self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setStyleSheet("""
             QTableWidget { border: none; font-size: 13px; background-color: white; }
-            QHeaderView::section { background-color: white; color: #4B5563; padding: 10px; border: none; border-bottom: 2px solid #F3F4F6; font-weight: 700; }
+            QHeaderView::section { 
+                background: #F8FAFC; padding: 12px; font-weight: 700; color: #475569; 
+                border-bottom: 2px solid #E2E8F0;
+            }
         """)
+        l.addWidget(self.table)
+        return w
 
     def load_data(self):
-        """Retrieve analytics and equipment details from API."""
+        """Fetch and synchronize data metrics."""
         try:
             res_a = self.api_client.get_analytics(self.dataset["id"])
             if res_a["success"]:
-                self.analytics = res_a["data"]
-                self.update_stats()
-                self.update_charts()
-            
+                data = res_a["data"]
+                count = data.get('total_equipment', 0)
+                self.count_lbl.setText(f"Command center identifying {count} chemical units in dataset.")
+                self.stat_values['total'].setText(str(count))
+                self.stat_values['flowrate'].setText(f"{data.get('avg_flowrate', 0):.2f}")
+                self.stat_values['pressure'].setText(f"{data.get('avg_pressure', 0):.2f}")
+                self.stat_values['temp'].setText(f"{data.get('avg_temperature', 0):.2f}°C")
+                self.update_charts(data)
+
             res_e = self.api_client.get_equipment(self.dataset["id"])
             if res_e["success"]:
-                self.equipment = res_e["data"]
-                self.populate_table()
+                self.populate_table(res_e["data"])
         except Exception as e:
-            logger.error(f"UI Loading Error: {e}")
+            logger.error(f"UI Integration Error: {e}")
 
-    def update_stats(self):
-        """Update stat card labels with fetched analytics."""
-        if self.analytics:
-            self.stat_values['total'].setText(str(self.analytics.get('total_equipment', 0)))
-            self.stat_values['flowrate'].setText(f"{self.analytics.get('avg_flowrate', 0):.1f}")
-            self.stat_values['pressure'].setText(f"{self.analytics.get('avg_pressure', 0):.1f}")
-            self.stat_values['temp'].setText(f"{self.analytics.get('avg_temperature', 0):.1f}°C")
-
-    def update_charts(self):
-        """Render visualization charts."""
-        if not self.analytics: return
-        colors = ['#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE']
-        
-        # Donut Distribution Chart
-        dist = self.analytics.get("equipment_type_distribution", {})
+    def update_charts(self, data):
+        """Render high-legibility Full Pie and Bar charts."""
+        # --- FULL PIE CHART (No Donut) ---
+        ax_p = self.pie_canvas.figure.add_subplot(111)
+        ax_p.clear()
+        dist = data.get("equipment_type_distribution", {})
         if dist:
-            self.pie_figure.clear()
-            ax = self.pie_figure.add_subplot(111)
-            ax.pie(dist.values(), labels=dist.keys(), autopct='%1.0f%%', colors=colors, 
-                   wedgeprops={'width': 0.4, 'edgecolor': 'w', 'linewidth': 3})
-            self.pie_canvas.draw()
+            # Industry-Standard Palette
+            colors = ['#6366F1', '#10B981', '#F59E0B', '#0EA5E9', '#8B5CF6']
+            ax_p.pie(dist.values(), labels=dist.keys(), autopct='%1.1f%%', 
+                     startangle=140, colors=colors,
+                     textprops={'fontsize': 10, 'fontweight': 'bold', 'color': '#1E293B'})
+            ax_p.axis('equal')
+        self.pie_canvas.figure.tight_layout()
+        self.pie_canvas.draw()
         
-        # Mean Parameters Bar Chart
-        self.bar_figure.clear()
-        ax = self.bar_figure.add_subplot(111)
-        params = ['Flow', 'Press', 'Temp']
-        vals = [self.analytics.get('avg_flowrate', 0), self.analytics.get('avg_pressure', 0), self.analytics.get('avg_temperature', 0)]
-        ax.bar(params, vals, color=['#3B82F6', '#60A5FA', '#93C5FD'], width=0.6)
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
+        # --- SYSTEM AVERAGE BAR CHART ---
+        ax_b = self.bar_canvas.figure.add_subplot(111)
+        ax_b.clear()
+        labels = ['Flow', 'Pressure', 'Temp']
+        vals = [data.get('avg_flowrate', 0), data.get('avg_pressure', 0), data.get('avg_temperature', 0)]
+        
+        ax_b.bar(labels, vals, color=['#6366F1', '#10B981', '#F59E0B'], width=0.55)
+        ax_b.spines['top'].set_visible(False)
+        ax_b.spines['right'].set_visible(False)
+        ax_b.tick_params(axis='both', which='major', labelsize=9)
+        self.bar_canvas.figure.tight_layout()
         self.bar_canvas.draw()
 
-    def populate_table(self):
-        """Render detailed equipment list."""
-        self.equipment_table.setRowCount(len(self.equipment))
-        for row, eq in enumerate(self.equipment):
-            self.equipment_table.setItem(row, 0, QTableWidgetItem(eq.get("equipment_name", "")))
-            self.equipment_table.setItem(row, 1, QTableWidgetItem(eq.get("equipment_type", "")))
-            for i, key in enumerate(['flowrate', 'pressure', 'temperature'], 2):
-                item = QTableWidgetItem(f"{eq.get(key, 0):.2f}")
-                item.setTextAlignment(Qt.AlignCenter)
-                self.equipment_table.setItem(row, i, item)
+    def populate_table(self, equipment):
+        """Fill equipment explorer with formatted status items."""
+        self.table.setRowCount(len(equipment))
+        for r, eq in enumerate(equipment):
+            self.table.setItem(r, 0, QTableWidgetItem(eq.get("equipment_name", "")))
+            self.table.setItem(r, 1, QTableWidgetItem(eq.get("equipment_type", "")))
+            self.table.setItem(r, 2, QTableWidgetItem(f"{eq.get('flowrate', 0):.2f}"))
+            self.table.setItem(r, 3, QTableWidgetItem(f"{eq.get('pressure', 0):.2f}"))
+            self.table.setItem(r, 4, QTableWidgetItem(f"{eq.get('temperature', 0):.2f}"))
             
-            is_outlier = eq.get("is_pressure_outlier") or eq.get("is_temperature_outlier")
-            status_item = QTableWidgetItem("⚠️ Outlier" if is_outlier else "✅ Normal")
-            status_item.setTextAlignment(Qt.AlignCenter)
-            status_item.setForeground(QColor("#DC2626" if is_outlier else "#16A34A"))
-            self.equipment_table.setItem(row, 5, status_item)
+            # Formatted Outlier Alerts
+            is_warn = eq.get("is_pressure_outlier") or eq.get("is_temperature_outlier")
+            status_txt = "⚠️  ALERT" if is_warn else "✅  NOMINAL"
+            item = QTableWidgetItem(status_txt)
+            item.setTextAlignment(Qt.AlignCenter)
+            item.setForeground(QColor("#EF4444" if is_warn else "#059669"))
+            self.table.setItem(r, 5, item)
 
+# Compatibility Alias
 DatasetDetailDialog = DatasetDetailWindow
