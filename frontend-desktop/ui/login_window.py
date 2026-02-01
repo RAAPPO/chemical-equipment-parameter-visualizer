@@ -1,6 +1,7 @@
 import logging
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QLineEdit, QPushButton, QMessageBox)
+                             QLineEdit, QPushButton, QMessageBox, 
+                             QApplication)  # Added QApplication
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QPalette, QColor
 
@@ -21,27 +22,37 @@ class LoginWindow(QWidget):
         """Initialize the UI."""
         self.setWindowTitle("CEPV - Login")
         self.setFixedSize(400, 350)
+        
+        # Apply improved modern styling
         self.setStyleSheet("""
             QWidget {
-                background-color: #f3f4f6;
+                background-color: #f9fafb;
             }
             QLineEdit {
-                padding: 8px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                font-size: 13px;
+                padding: 10px;
+                border: 2px solid #E5E7EB;
+                border-radius: 6px;
+                font-size: 14px;
                 background-color: white;
+            }
+            QLineEdit:focus {
+                border: 2px solid #1E3A8A;
+                background-color: #FFFFFF;
             }
             QPushButton {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 10px;
+                padding: 12px;
                 border: none;
-                border-radius: 4px;
-                font-size: 13px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: 600;
             }
             QPushButton:hover {
-                background-color: #2563EB;
+                background-color: #1E40AF;
+            }
+            QPushButton:pressed {
+                background-color: #1E3A8A;
             }
             QLabel {
                 color: #374151;
@@ -126,7 +137,6 @@ class LoginWindow(QWidget):
         if result["success"]:
             logger.info("Login successful! Emitting signal...")
             self.login_successful.emit(username)
-            # The controller will handle closing this widget and opening the MainWindow
         else:
             error_msg = result.get('error', 'Unknown error')
             logger.warning(f"Login failed for {username}: {error_msg}")
@@ -135,3 +145,18 @@ class LoginWindow(QWidget):
                 "Login Failed", 
                 f"Authentication failed:\n{error_msg}"
             )
+
+    def closeEvent(self, event):
+        """Handle window close event."""
+        reply = QMessageBox.question(
+            self,
+            "Exit Application",
+            "Are you sure you want to exit?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            event.accept()
+            QApplication.quit()
+        else:
+            event.ignore()

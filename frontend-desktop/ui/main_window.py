@@ -3,9 +3,10 @@ import logging
 from datetime import datetime
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QTableWidget, QTableWidgetItem,
-                             QFileDialog, QMessageBox, QHeaderView, QFrame)
+                             QFileDialog, QMessageBox, QHeaderView, QFrame,
+                             QApplication)  # Added QApplication
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QCloseEvent, QKeyEvent  # Added QCloseEvent and QKeyEvent
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -37,7 +38,6 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.load_datasets()
 
-        # Replaced print with logger.info for consistency
         logger.info(f"MainWindow initialized for user: {username}")
         self.setWindowState(self.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
         self.show() 
@@ -73,12 +73,15 @@ class MainWindow(QMainWindow):
         # Status bar
         self.statusBar().showMessage("Ready")
         
+        # Menu bar - Added for Professional UI
+        self.create_menu_bar()
+
         central_widget.setLayout(main_layout)
         
-        # Apply stylesheet
+        # Apply modern stylesheet
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f3f4f6;
+                background-color: #f9fafb;
             }
             QLabel#title {
                 color: #1E3A8A;
@@ -94,26 +97,139 @@ class MainWindow(QMainWindow):
                 color: white;
                 padding: 10px 20px;
                 border: none;
-                border-radius: 5px;
+                border-radius: 6px;
                 font-size: 14px;
+                font-weight: 500;
             }
             QPushButton:hover {
                 background-color: #1E40AF;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+            QPushButton:pressed {
+                background-color: #1E3A8A;
+            }
+            QPushButton:disabled {
+                background-color: #9CA3AF;
             }
             QTableWidget {
                 background-color: white;
-                border: 1px solid #D1D5DB;
-                border-radius: 5px;
-                gridline-color: #E5E7EB;
+                border: 1px solid #E5E7EB;
+                border-radius: 8px;
+                gridline-color: #F3F4F6;
+            }
+            QTableWidget::item {
+                padding: 8px;
+            }
+            QTableWidget::item:selected {
+                background-color: #DBEAFE;
+                color: #1E3A8A;
+            }
+            QTableWidget::item:hover {
+                background-color: #F3F4F6;
             }
             QHeaderView::section {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 10px;
+                padding: 12px;
                 border: none;
-                font-weight: bold;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QStatusBar {
+                background-color: #F3F4F6;
+                color: #6B7280;
+                border-top: 1px solid #E5E7EB;
+                padding: 5px;
+            }
+            QMenuBar {
+                background-color: white;
+                border-bottom: 1px solid #E5E7EB;
+                padding: 5px;
+            }
+            QMenuBar::item {
+                padding: 8px 12px;
+                background-color: transparent;
+            }
+            QMenuBar::item:selected {
+                background-color: #F3F4F6;
+                border-radius: 4px;
+            }
+            QMenu {
+                background-color: white;
+                border: 1px solid #E5E7EB;
+                border-radius: 6px;
+                padding: 5px;
+            }
+            QMenu::item {
+                padding: 8px 30px 8px 20px;
+                border-radius: 4px;
+            }
+            QMenu::item:selected {
+                background-color: #DBEAFE;
+                color: #1E3A8A;
+            }
+            QFrame {
+                background-color: transparent;
             }
         """)
+
+    def create_menu_bar(self):
+        """Create professional menu bar with keyboard shortcuts."""
+        menubar = self.menuBar()
+        
+        # File Menu
+        file_menu = menubar.addMenu('&File')
+        
+        # Upload CSV
+        upload_action = file_menu.addAction('📁 Upload CSV')
+        upload_action.setShortcut('Ctrl+O')
+        upload_action.setStatusTip('Upload a new CSV dataset')
+        upload_action.triggered.connect(self.handle_upload)
+        
+        # Refresh
+        refresh_action = file_menu.addAction('🔄 Refresh')
+        refresh_action.setShortcut('Ctrl+R')
+        refresh_action.setStatusTip('Refresh dataset list')
+        refresh_action.triggered.connect(self.load_datasets)
+        
+        file_menu.addSeparator()
+        
+        # Logout
+        logout_action = file_menu.addAction('🚪 Logout')
+        logout_action.setShortcut('Ctrl+L')
+        logout_action.setStatusTip('Logout and return to login screen')
+        logout_action.triggered.connect(self.handle_logout)
+        
+        file_menu.addSeparator()
+        
+        # Exit
+        exit_action = file_menu.addAction('❌ Exit')
+        exit_action.setShortcut('Ctrl+Q')
+        exit_action.setStatusTip('Exit application')
+        exit_action.triggered.connect(self.handle_exit)
+        
+        # View Menu
+        view_menu = menubar.addMenu('&View')
+        
+        # Toggle Status Bar
+        status_bar_action = view_menu.addAction('Status Bar')
+        status_bar_action.setCheckable(True)
+        status_bar_action.setChecked(True)
+        status_bar_action.triggered.connect(self.toggle_status_bar)
+        
+        # Help Menu
+        help_menu = menubar.addMenu('&Help')
+        
+        # About
+        about_action = help_menu.addAction('ℹ️ About')
+        about_action.setShortcut('F1')
+        about_action.triggered.connect(self.show_about)
+        
+        # Documentation
+        docs_action = help_menu.addAction('📖 Documentation')
+        docs_action.triggered.connect(self.show_documentation)
+        
+        return menubar
     
     def create_header(self):
         """Create header section."""
@@ -131,6 +247,7 @@ class MainWindow(QMainWindow):
         header_layout.addWidget(username_label)
         
         logout_btn = QPushButton("Logout")
+        logout_btn.setToolTip("Logout and return to login screen (Ctrl+L)")  # Added tooltip
         logout_btn.clicked.connect(self.handle_logout)
         logout_btn.setStyleSheet("background-color: #DC2626;")
         header_layout.addWidget(logout_btn)
@@ -150,10 +267,12 @@ class MainWindow(QMainWindow):
         toolbar_layout.addStretch()
         
         upload_btn = QPushButton("📁 Upload CSV")
+        upload_btn.setToolTip("Upload a new CSV dataset (Ctrl+O)")  # Added tooltip
         upload_btn.clicked.connect(self.handle_upload)
         toolbar_layout.addWidget(upload_btn)
         
         refresh_btn = QPushButton("🔄 Refresh")
+        refresh_btn.setToolTip("Refresh dataset list (Ctrl+R)")  # Added tooltip
         refresh_btn.clicked.connect(self.load_datasets)
         toolbar_layout.addWidget(refresh_btn)
         
@@ -281,3 +400,111 @@ class MainWindow(QMainWindow):
         if reply == QMessageBox.Yes:
             logger.info(f"User {self.username} logged out")
             self.logout_requested.emit()
+
+    def toggle_status_bar(self, checked):
+        """Toggle status bar visibility."""
+        if checked:
+            self.statusBar().show()
+        else:
+            self.statusBar().hide()
+
+    def handle_exit(self):
+        """Handle application exit."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "Are you sure you want to exit the application?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            logger.info("Application exit requested by user")
+            QApplication.quit()
+
+    def show_about(self):
+        """Show About dialog."""
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+        from PyQt5.QtCore import Qt
+        
+        dialog = QDialog(self)
+        dialog.setWindowTitle("About CEPV")
+        dialog.setFixedSize(400, 300)
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+        
+        # App icon/title
+        title = QLabel("🧪 Chemical Equipment Parameter Visualizer")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #1E3A8A;")
+        layout.addWidget(title)
+        
+        # Version
+        version = QLabel("Version 1.0.0")
+        version.setAlignment(Qt.AlignCenter)
+        version.setStyleSheet("font-size: 12px; color: #6B7280;")
+        layout.addWidget(version)
+        
+        # Description
+        desc = QLabel(
+            "A professional desktop application for analyzing\n"
+            "and visualizing chemical equipment parameters.\n\n"
+            "Built with PyQt5, Django REST Framework,\n"
+            "and industry-best practices."
+        )
+        desc.setAlignment(Qt.AlignCenter)
+        desc.setStyleSheet("font-size: 11px; color: #374151;")
+        layout.addWidget(desc)
+        
+        # Credits
+        credits = QLabel(
+            "Developed by: RAAPPO\n"
+            "FOSSEE Internship 2026"
+        )
+        credits.setAlignment(Qt.AlignCenter)
+        credits.setStyleSheet("font-size: 10px; color: #6B7280; margin-top: 20px;")
+        layout.addWidget(credits)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(dialog.close)
+        layout.addWidget(close_btn)
+        
+        dialog.setLayout(layout)
+        dialog.exec_()
+
+    def show_documentation(self):
+        """Show documentation link."""
+        QMessageBox.information(
+            self,
+            "Documentation",
+            "Documentation is available at:\n\n"
+            "https://github.com/RAAPPO/chemical-equipment-parameter-visualizer\n\n"
+            "For support, please open an issue on GitHub."
+        )
+
+    def keyPressEvent(self, event):
+        """Handle keyboard shortcuts."""
+        # Escape key to close dialogs
+        if event.key() == Qt.Key_Escape:
+            self.statusBar().showMessage("Press Ctrl+Q to exit or Ctrl+L to logout", 3000)
+        else:
+            super().keyPressEvent(event)
+
+    def closeEvent(self, event):
+        """Handle window close event (X button or Alt+F4)."""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Exit",
+            "Are you sure you want to close the application?\n"
+            "Click 'Logout' if you want to return to login screen.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No  # Default to No
+        )
+        
+        if reply == QMessageBox.Yes:
+            logger.info("Application closed via window close button")
+            event.accept()
+            QApplication.quit()
+        else:
+            event.ignore()
