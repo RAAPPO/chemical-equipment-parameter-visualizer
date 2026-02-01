@@ -63,7 +63,7 @@ class Dataset(models.Model):
             .values_list('equipment_type', 'count')
         )
         
-        # Get outliers efficiently using the composite index on Equipment
+        # Get outliers efficiently (optimized by the Equipment composite index)
         outliers = equipment_qs.filter(
             Q(is_pressure_outlier=True) | Q(is_temperature_outlier=True)
         ).values('equipment_name', 'equipment_type', 'is_pressure_outlier', 'is_temperature_outlier')
@@ -125,7 +125,7 @@ class Equipment(models.Model):
         indexes = [
             models.Index(fields=['dataset_id', 'equipment_type']),
             models.Index(fields=['equipment_name']),
-            # Composite index for efficient outlier filtering within a specific dataset
+            # Composite index for efficient outlier filtering
             models.Index(fields=['dataset_id', 'is_pressure_outlier', 'is_temperature_outlier']),
         ]
         verbose_name = "Equipment"
@@ -133,6 +133,11 @@ class Equipment(models.Model):
     
     def __str__(self):
         return f"{self.equipment_name} ({self.equipment_type})"
+
+    @property
+    def is_outlier(self):
+        """Check if equipment has any outlier flags. Used by Admin and Serializers."""
+        return self.is_pressure_outlier or self.is_temperature_outlier
 
 
 @receiver(post_save, sender=Dataset)
