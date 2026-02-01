@@ -415,10 +415,10 @@ class MainWindow(QMainWindow):
                 self.statusBar().showMessage("Upload failed")
     
     def view_details(self, dataset):
-        """View dataset details."""
-        from widgets.detail_widget import DatasetDetailDialog
-        dialog = DatasetDetailDialog(self.api_client, dataset, self)
-        dialog.exec_()
+        """View dataset details in a new window."""
+        from widgets.detail_widget import DatasetDetailWindow
+        detail_window = DatasetDetailWindow(self.api_client, dataset, self)
+        detail_window.show()
     
     def download_pdf(self, dataset):
         """Download PDF report."""
