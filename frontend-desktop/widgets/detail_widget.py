@@ -1,11 +1,10 @@
 """
-Dataset Detail Window - FIXED: Scrollable, Maximizable, Properly Sized
+Dataset Detail Window - SIMPLE, CLEAN, EVERYTHING VISIBLE
 """
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QPushButton, QFrame,
-                             QTabWidget, QGridLayout, QHeaderView, QApplication,
-                             QScrollArea, QSizePolicy)
-from PyQt5.QtCore import Qt, QSize
+                             QHeaderView, QApplication, QSplitter)
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class DatasetDetailWindow(QMainWindow):
-    """Dataset detail window - Scrollable and maximizable."""
+    """Simple, clean dataset detail window - everything visible."""
     
     def __init__(self, api_client, dataset, parent=None):
         super().__init__(parent)
@@ -23,7 +22,7 @@ class DatasetDetailWindow(QMainWindow):
         self.dataset = dataset
         self.analytics = None
         self.equipment = []
-        self.stat_labels = {}
+        self.stat_values = {}
         
         self.init_ui()
         self.load_data()
@@ -32,20 +31,15 @@ class DatasetDetailWindow(QMainWindow):
         """Initialize UI."""
         self.setWindowTitle(f"Dataset Analysis - {self.dataset.get('filename')}")
         
-        # Get screen size
+        # Window size
         screen = QApplication.primaryScreen().geometry()
-        
-        # Initial size (70% of screen)
-        width = int(screen.width() * 0.70)
-        height = int(screen.height() * 0.75)
+        width = int(screen.width() * 0.85)
+        height = int(screen.height() * 0.85)
         
         self.resize(width, height)
+        self.setMinimumSize(1000, 700)
         
-        # CRITICAL: Allow window to be resized AND maximized
-        self.setMinimumSize(900, 650)  # Minimum size
-        # Don't set maximum size - allows maximize!
-        
-        # Center window
+        # Center
         x = (screen.width() - width) // 2
         y = (screen.height() - height) // 2
         self.move(x, y)
@@ -53,271 +47,172 @@ class DatasetDetailWindow(QMainWindow):
         # Main container
         container = QWidget()
         self.setCentralWidget(container)
-        layout = QVBoxLayout()
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(15)
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(12)
         
         # Header
-        header = QLabel(f"📊 {self.dataset.get('filename', 'Dataset Analysis')}")
-        header.setStyleSheet("font-size: 20px; font-weight: bold; color: #1E3A8A;")
-        header.setWordWrap(True)
-        layout.addWidget(header)
+        header = QLabel(self.dataset.get('filename', 'Dataset Analysis'))
+        header.setStyleSheet("font-size: 18px; font-weight: bold; color: #1E3A8A; padding: 8px;")
+        main_layout.addWidget(header)
         
-        # Tabs
-        self.tabs = QTabWidget()
-        self.tabs.setStyleSheet("""
-            QTabWidget::pane {
-                border: 2px solid #E5E7EB;
-                border-radius: 10px;
-                background-color: white;
-            }
-            QTabBar::tab {
-                background-color: #F3F4F6;
-                color: #374151;
-                padding: 14px 30px;
-                border: none;
-                border-top-left-radius: 8px;
-                border-top-right-radius: 8px;
-                margin-right: 6px;
-                font-size: 15px;
-                font-weight: 600;
-                min-width: 150px;
-            }
-            QTabBar::tab:selected {
-                background-color: white;
-                color: #1E3A8A;
-                border-bottom: 3px solid #1E3A8A;
-            }
-            QTabBar::tab:hover:!selected {
-                background-color: #E5E7EB;
-            }
-        """)
+        # === STATS ROW (4 cards horizontal) ===
+        stats_layout = QHBoxLayout()
+        stats_layout.setSpacing(10)
         
-        # Create tabs with scroll areas
-        self.tabs.addTab(self.create_overview_tab(), "📋 Overview")
-        self.tabs.addTab(self.create_charts_tab(), "📊 Visual Analytics")
-        self.tabs.addTab(self.create_equipment_tab(), "📈 Equipment Data")
+        stats_data = [
+            ("Total Equipment", "total", "#1E3A8A"),
+            ("Avg Flowrate", "flowrate", "#3B82F6"),
+            ("Avg Pressure", "pressure", "#60A5FA"),
+            ("Avg Temperature", "temp", "#F97316")
+        ]
         
-        layout.addWidget(self.tabs, 1)
+        for title, key, color in stats_data:
+            card = self.create_simple_stat_card(title, key, color)
+            stats_layout.addWidget(card)
+        
+        main_layout.addLayout(stats_layout)
+        
+        # === CHARTS ROW (side by side) ===
+        charts_layout = QHBoxLayout()
+        charts_layout.setSpacing(10)
+        
+        # Pie Chart
+        pie_widget = QWidget()
+        pie_layout = QVBoxLayout()
+        pie_layout.setContentsMargins(5, 5, 5, 5)
+        pie_layout.setSpacing(5)
+        
+        pie_title = QLabel("Equipment Type Distribution")
+        pie_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #374151;")
+        pie_title.setAlignment(Qt.AlignCenter)
+        pie_layout.addWidget(pie_title)
+        
+        self.pie_figure = Figure(figsize=(6, 4), dpi=80, facecolor='white')
+        self.pie_canvas = FigureCanvas(self.pie_figure)
+        self.pie_canvas.setMaximumHeight(320)
+        pie_layout.addWidget(self.pie_canvas)
+        
+        pie_widget.setLayout(pie_layout)
+        pie_widget.setStyleSheet("background-color: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px;")
+        charts_layout.addWidget(pie_widget)
+        
+        # Bar Chart
+        bar_widget = QWidget()
+        bar_layout = QVBoxLayout()
+        bar_layout.setContentsMargins(5, 5, 5, 5)
+        bar_layout.setSpacing(5)
+        
+        bar_title = QLabel("Average Parameters")
+        bar_title.setStyleSheet("font-size: 14px; font-weight: bold; color: #374151;")
+        bar_title.setAlignment(Qt.AlignCenter)
+        bar_layout.addWidget(bar_title)
+        
+        self.bar_figure = Figure(figsize=(6, 4), dpi=80, facecolor='white')
+        self.bar_canvas = FigureCanvas(self.bar_figure)
+        self.bar_canvas.setMaximumHeight(320)
+        bar_layout.addWidget(self.bar_canvas)
+        
+        bar_widget.setLayout(bar_layout)
+        bar_widget.setStyleSheet("background-color: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px;")
+        charts_layout.addWidget(bar_widget)
+        
+        main_layout.addLayout(charts_layout)
+        
+        # === TABLE (bottom) ===
+        table_label = QLabel("Equipment Details")
+        table_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #374151; padding: 5px;")
+        main_layout.addWidget(table_label)
+        
+        self.equipment_table = QTableWidget()
+        self.equipment_table.setColumnCount(6)
+        self.equipment_table.setHorizontalHeaderLabels([
+            "Name", "Type", "Flowrate", "Pressure", "Temperature", "Status"
+        ])
+        self.equipment_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.equipment_table.verticalHeader().setDefaultSectionSize(40)
+        self.equipment_table.setAlternatingRowColors(True)
+        self.equipment_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.equipment_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.equipment_table.setMaximumHeight(250)  # Limit table height
+        
+        main_layout.addWidget(self.equipment_table)
         
         # Close button
-        close_btn = QPushButton("✖ Close Window")
+        close_btn = QPushButton("✖ Close")
         close_btn.setStyleSheet("""
             QPushButton {
                 background-color: #6B7280;
                 color: white;
-                padding: 14px 28px;
-                border-radius: 8px;
-                font-size: 15px;
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-size: 14px;
                 font-weight: 600;
-                min-height: 45px;
-                min-width: 140px;
             }
             QPushButton:hover {
                 background-color: #4B5563;
             }
         """)
+        close_btn.setMaximumWidth(120)
         close_btn.clicked.connect(self.close)
         
         btn_layout = QHBoxLayout()
         btn_layout.addStretch()
         btn_layout.addWidget(close_btn)
-        layout.addLayout(btn_layout)
+        main_layout.addLayout(btn_layout)
         
-        container.setLayout(layout)
+        container.setLayout(main_layout)
         self.apply_stylesheet()
     
-    def create_overview_tab(self):
-        """Tab 1: Overview with scrollable stat cards."""
-        # Scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
+    def create_simple_stat_card(self, title, key, color):
+        """Create simple stat card."""
+        card = QFrame()
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: white;
+                border: 2px solid {color};
+                border-radius: 8px;
+                padding: 12px;
+            }}
+        """)
+        card.setFixedHeight(80)
         
-        # Content widget
-        content = QWidget()
         layout = QVBoxLayout()
-        layout.setSpacing(20)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(5)
+        layout.setContentsMargins(5, 5, 5, 5)
         
         # Title
-        title = QLabel("Dataset Summary")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #374151;")
-        layout.addWidget(title)
-        
-        # Stats grid
-        grid = QGridLayout()
-        grid.setSpacing(20)
-        
-        cards = [
-            ("📊", "Total\nEquipment", "total"),
-            ("💧", "Average\nFlowrate", "flowrate"),
-            ("⚡", "Average\nPressure", "pressure"),
-            ("🌡️", "Average\nTemperature", "temp")
-        ]
-        
-        for idx, (icon, title_text, key) in enumerate(cards):
-            card = self.create_stat_card(icon, title_text, key)
-            grid.addWidget(card, idx // 2, idx % 2)
-        
-        layout.addLayout(grid)
-        layout.addStretch()
-        
-        content.setLayout(layout)
-        scroll.setWidget(content)
-        return scroll
-    
-    def create_stat_card(self, icon, title, key):
-        """Create stat card with proper sizing."""
-        card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: white;
-                border: 2px solid #E5E7EB;
-                border-radius: 12px;
-                padding: 25px;
-            }
-        """)
-        card.setMinimumHeight(140)
-        card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        
-        layout = QVBoxLayout()
-        layout.setSpacing(12)
-        
-        # Icon + Title
-        top = QHBoxLayout()
-        icon_label = QLabel(icon)
-        icon_label.setStyleSheet("font-size: 36px;")
-        icon_label.setFixedWidth(50)
-        top.addWidget(icon_label)
-        
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 14px; color: #6B7280; font-weight: 600;")
-        title_label.setWordWrap(True)
-        top.addWidget(title_label, 1)
-        
-        layout.addLayout(top)
+        title_label.setStyleSheet("font-size: 12px; color: #6B7280; font-weight: 600;")
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
         
         # Value
-        value = QLabel("-")
-        value.setStyleSheet("font-size: 32px; font-weight: bold; color: #1E3A8A;")
-        layout.addWidget(value)
+        value_label = QLabel("-")
+        value_label.setStyleSheet(f"font-size: 24px; font-weight: bold; color: {color};")
+        value_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(value_label)
         
         card.setLayout(layout)
-        self.stat_labels[key] = value
+        self.stat_values[key] = value_label
         return card
-    
-    def create_charts_tab(self):
-        """Tab 2: Charts with proper scrolling."""
-        # Scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.NoFrame)
-        
-        # Content widget
-        content = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(25)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Title
-        title = QLabel("Visual Analytics")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #374151;")
-        layout.addWidget(title)
-        
-        # PIE CHART
-        pie_frame = QFrame()
-        pie_frame.setStyleSheet("QFrame { background-color: #F9FAFB; border-radius: 10px; padding: 15px; }")
-        pie_layout = QVBoxLayout()
-        
-        pie_title = QLabel("Equipment Type Distribution")
-        pie_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #374151;")
-        pie_title.setAlignment(Qt.AlignCenter)
-        pie_layout.addWidget(pie_title)
-        
-        # FIXED: Proper chart size
-        self.pie_figure = Figure(figsize=(10, 6), dpi=80, facecolor='#F9FAFB')
-        self.pie_canvas = FigureCanvas(self.pie_figure)
-        self.pie_canvas.setMinimumSize(600, 400)
-        self.pie_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        pie_layout.addWidget(self.pie_canvas)
-        
-        pie_frame.setLayout(pie_layout)
-        layout.addWidget(pie_frame)
-        
-        # BAR CHART
-        bar_frame = QFrame()
-        bar_frame.setStyleSheet("QFrame { background-color: #F9FAFB; border-radius: 10px; padding: 15px; }")
-        bar_layout = QVBoxLayout()
-        
-        bar_title = QLabel("Average Parameters Comparison")
-        bar_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #374151;")
-        bar_title.setAlignment(Qt.AlignCenter)
-        bar_layout.addWidget(bar_title)
-        
-        # FIXED: Proper chart size
-        self.bar_figure = Figure(figsize=(10, 6), dpi=80, facecolor='#F9FAFB')
-        self.bar_canvas = FigureCanvas(self.bar_figure)
-        self.bar_canvas.setMinimumSize(600, 400)
-        self.bar_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        bar_layout.addWidget(self.bar_canvas)
-        
-        bar_frame.setLayout(bar_layout)
-        layout.addWidget(bar_frame)
-        
-        layout.addStretch()
-        content.setLayout(layout)
-        scroll.setWidget(content)
-        return scroll
-    
-    def create_equipment_tab(self):
-        """Tab 3: Equipment table."""
-        widget = QWidget()
-        layout = QVBoxLayout()
-        layout.setSpacing(15)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Title
-        title = QLabel("Equipment Details")
-        title.setStyleSheet("font-size: 18px; font-weight: bold; color: #374151;")
-        layout.addWidget(title)
-        
-        # Table
-        self.equipment_table = QTableWidget()
-        self.equipment_table.setColumnCount(6)
-        self.equipment_table.setHorizontalHeaderLabels([
-            "Equipment Name", "Type", "Flowrate", "Pressure", "Temperature", "Status"
-        ])
-        
-        self.equipment_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.equipment_table.verticalHeader().setDefaultSectionSize(50)
-        self.equipment_table.setAlternatingRowColors(True)
-        self.equipment_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.equipment_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        
-        layout.addWidget(self.equipment_table, 1)
-        widget.setLayout(layout)
-        return widget
     
     def apply_stylesheet(self):
         """Apply stylesheet."""
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f9fafb;
-            }
-            QScrollArea {
-                border: none;
-                background-color: white;
+                background-color: #F3F4F6;
             }
             QTableWidget {
                 background-color: white;
                 border: 1px solid #E5E7EB;
-                border-radius: 8px;
-                gridline-color: #F3F4F6;
-                font-size: 14px;
+                border-radius: 6px;
+                gridline-color: #E5E7EB;
+                font-size: 13px;
             }
             QTableWidget::item {
-                padding: 14px 10px;
+                padding: 10px 8px;
+                color: #1F2937;
             }
             QTableWidget::item:selected {
                 background-color: #DBEAFE;
@@ -326,10 +221,10 @@ class DatasetDetailWindow(QMainWindow):
             QHeaderView::section {
                 background-color: #1E3A8A;
                 color: white;
-                padding: 16px 10px;
+                padding: 12px 8px;
                 border: none;
                 font-weight: 700;
-                font-size: 14px;
+                font-size: 13px;
             }
         """)
     
@@ -354,10 +249,10 @@ class DatasetDetailWindow(QMainWindow):
     def update_stats(self):
         """Update stats."""
         if self.analytics:
-            self.stat_labels['total'].setText(str(self.analytics.get('total_equipment', 0)))
-            self.stat_labels['flowrate'].setText(f"{self.analytics.get('avg_flowrate', 0):.2f}")
-            self.stat_labels['pressure'].setText(f"{self.analytics.get('avg_pressure', 0):.2f}")
-            self.stat_labels['temp'].setText(f"{self.analytics.get('avg_temperature', 0):.2f}°C")
+            self.stat_values['total'].setText(str(self.analytics.get('total_equipment', 0)))
+            self.stat_values['flowrate'].setText(f"{self.analytics.get('avg_flowrate', 0):.2f}")
+            self.stat_values['pressure'].setText(f"{self.analytics.get('avg_pressure', 0):.2f}")
+            self.stat_values['temp'].setText(f"{self.analytics.get('avg_temperature', 0):.2f}°C")
     
     def update_charts(self):
         """Draw charts."""
@@ -371,7 +266,6 @@ class DatasetDetailWindow(QMainWindow):
         if distribution:
             self.pie_figure.clear()
             ax = self.pie_figure.add_subplot(111)
-            ax.set_facecolor('#F9FAFB')
             
             wedges, texts, autotexts = ax.pie(
                 list(distribution.values()),
@@ -379,23 +273,21 @@ class DatasetDetailWindow(QMainWindow):
                 autopct='%1.1f%%',
                 colors=colors[:len(distribution)],
                 startangle=90,
-                textprops={'fontsize': 12, 'weight': 'bold'},
-                wedgeprops={'edgecolor': 'white', 'linewidth': 2}
+                textprops={'fontsize': 10, 'weight': 'bold', 'color': '#1F2937'},
+                wedgeprops={'edgecolor': 'white', 'linewidth': 1.5}
             )
             
             for autotext in autotexts:
                 autotext.set_color('white')
-                autotext.set_fontsize(11)
+                autotext.set_fontsize(9)
             
             ax.axis('equal')
-            self.pie_figure.tight_layout(pad=1.5)
+            self.pie_figure.tight_layout(pad=0.5)
             self.pie_canvas.draw()
         
         # BAR CHART
         self.bar_figure.clear()
         ax = self.bar_figure.add_subplot(111)
-        ax.set_facecolor('#F9FAFB')
-        self.bar_figure.patch.set_facecolor('#F9FAFB')
         
         params = ['Flowrate', 'Pressure', 'Temperature']
         values = [
@@ -405,22 +297,22 @@ class DatasetDetailWindow(QMainWindow):
         ]
         
         bars = ax.bar(params, values, color=['#1E3A8A', '#3B82F6', '#60A5FA'], 
-                     width=0.6, edgecolor='white', linewidth=2)
+                     width=0.5, edgecolor='white', linewidth=1.5)
         
-        ax.set_ylabel("Value", fontsize=13, weight='bold', color='#374151')
+        ax.set_ylabel("Value", fontsize=11, weight='bold', color='#374151')
         ax.grid(axis='y', alpha=0.3, linestyle='--')
         ax.set_axisbelow(True)
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
-        ax.tick_params(labelsize=12, colors='#374151')
+        ax.tick_params(labelsize=10, colors='#374151')
         
         for bar in bars:
             height = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2., height,
                    f'{height:.1f}',
-                   ha='center', va='bottom', fontsize=13, weight='bold')
+                   ha='center', va='bottom', fontsize=11, weight='bold', color='#1F2937')
         
-        self.bar_figure.tight_layout(pad=1.5)
+        self.bar_figure.tight_layout(pad=0.5)
         self.bar_canvas.draw()
     
     def populate_table(self):
@@ -428,19 +320,28 @@ class DatasetDetailWindow(QMainWindow):
         self.equipment_table.setRowCount(len(self.equipment))
         
         for row, eq in enumerate(self.equipment):
-            self.equipment_table.setItem(row, 0, QTableWidgetItem(eq.get("equipment_name", "")))
-            self.equipment_table.setItem(row, 1, QTableWidgetItem(eq.get("equipment_type", "")))
+            # All items with proper text color
+            name = QTableWidgetItem(eq.get("equipment_name", ""))
+            name.setForeground(QColor("#1F2937"))
+            self.equipment_table.setItem(row, 0, name)
+            
+            type_item = QTableWidgetItem(eq.get("equipment_type", ""))
+            type_item.setForeground(QColor("#1F2937"))
+            self.equipment_table.setItem(row, 1, type_item)
             
             flow = QTableWidgetItem(f"{eq.get('flowrate', 0):.2f}")
             flow.setTextAlignment(Qt.AlignCenter)
+            flow.setForeground(QColor("#1F2937"))
             self.equipment_table.setItem(row, 2, flow)
             
             pres = QTableWidgetItem(f"{eq.get('pressure', 0):.2f}")
             pres.setTextAlignment(Qt.AlignCenter)
+            pres.setForeground(QColor("#1F2937"))
             self.equipment_table.setItem(row, 3, pres)
             
             temp = QTableWidgetItem(f"{eq.get('temperature', 0):.2f}")
             temp.setTextAlignment(Qt.AlignCenter)
+            temp.setForeground(QColor("#1F2937"))
             self.equipment_table.setItem(row, 4, temp)
             
             is_outlier = eq.get("is_pressure_outlier") or eq.get("is_temperature_outlier")
@@ -453,6 +354,8 @@ class DatasetDetailWindow(QMainWindow):
                 font = QFont()
                 font.setBold(True)
                 status_item.setFont(font)
+            else:
+                status_item.setForeground(QColor("#059669"))
             
             self.equipment_table.setItem(row, 5, status_item)
 
