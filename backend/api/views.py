@@ -8,7 +8,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.http import FileResponse
-from django.core.exceptions import ValidationError
 import logging
 
 from .models import Dataset, Equipment

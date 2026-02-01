@@ -85,11 +85,11 @@ class DatasetService:
         """
         if len(values) < 3:
             return np.zeros(len(values), dtype=bool)
-        
+
         mean = np.mean(values)
-        std = np.std(values)
-        
-        if std == 0:
+        std = np.std(values, ddof=1)  # Sample std deviation (n-1)
+
+        if std == 0 or np.isnan(std):
             return np.zeros(len(values), dtype=bool)
         
         z_scores = np.abs((values - mean) / std)
@@ -149,13 +149,23 @@ class DatasetService:
     @staticmethod
     def get_analytics(dataset_id: str) -> Dict[str, Any]:
         """
-        Get analytics for a dataset (delegates to model method).
+        Get analytics for a dataset.
         
         Args:
             dataset_id: UUID of dataset
             
         Returns:
-            Dictionary with analytics data
+            Dictionary with analytics data including:
+            - total_equipment (int)
+            - avg_flowrate (float)
+            - avg_pressure (float)
+            - avg_temperature (float)
+            - equipment_type_distribution (dict)
+            - outliers_count (int)
+            - outlier_equipment (list)
+            
+        Raises:
+            ValueError: If dataset not found
         """
         try:
             dataset = Dataset.objects.prefetch_related('equipment').get(id=dataset_id)

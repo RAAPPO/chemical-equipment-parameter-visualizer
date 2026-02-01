@@ -6,4 +6,4 @@ pandas==2.2.3
 numpy==2.2.2
 reportlab==4.2.5
 Pillow==11.1.0
-python-decouple==3.8python-decouple==3.8
+python-decouple==3.8

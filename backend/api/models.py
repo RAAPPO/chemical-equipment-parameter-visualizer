@@ -19,8 +19,7 @@ class DatasetManager(models.Manager):
     
     def recent(self, limit=5):
         """Get recent datasets with equipment prefetched."""
-        return self.select_related().prefetch_related('equipment').order_by('-uploaded_at')[:limit]
-
+        return self.prefetch_related('equipment').order_by('-uploaded_at')[:limit]
 
 class Dataset(models.Model):
     """Metadata for uploaded CSV datasets with FIFO management."""
@@ -43,6 +42,7 @@ class Dataset(models.Model):
         indexes = [
             models.Index(fields=['-uploaded_at']),
             models.Index(fields=['filename']),
+            models.Index(fields=['dataset', 'is_pressure_outlier', 'is_temperature_outlier']),
         ]
         verbose_name = "Dataset"
         verbose_name_plural = "Datasets"
@@ -51,16 +51,23 @@ class Dataset(models.Model):
         return f"{self.filename} ({self.uploaded_at.strftime('%Y-%m-%d %H:%M')})"
     
     def get_analytics(self):
-        """Calculate analytics for this dataset (cached property would be better)."""
-        equipment_list = self.equipment.all()
+        """Calculate analytics for this dataset using database aggregation."""
+        from django.db.models import Count, Q
         
-        type_distribution = {}
-        for eq in equipment_list:
-            type_distribution[eq.equipment_type] = type_distribution.get(eq.equipment_type, 0) + 1
+        # Get equipment queryset (not fetched yet)
+        equipment_qs = self.equipment.all()
         
-        outliers = equipment_list.filter(
-            models.Q(is_pressure_outlier=True) | models.Q(is_temperature_outlier=True)
-        ).distinct()
+        # Calculate type distribution using aggregation (1 query)
+        type_distribution = dict(
+            equipment_qs.values('equipment_type')
+            .annotate(count=Count('id'))
+            .values_list('equipment_type', 'count')
+        )
+        
+        # Get outliers efficiently (1 query with filter)
+        outliers = equipment_qs.filter(
+            Q(is_pressure_outlier=True) | Q(is_temperature_outlier=True)
+        ).values('equipment_name', 'equipment_type', 'is_pressure_outlier', 'is_temperature_outlier')
         
         return {
             'total_equipment': self.total_equipment,
@@ -68,13 +75,13 @@ class Dataset(models.Model):
             'avg_pressure': self.avg_pressure,
             'avg_temperature': self.avg_temperature,
             'equipment_type_distribution': type_distribution,
-            'outliers_count': outliers.count(),
+            'outliers_count': len(outliers),
             'outlier_equipment': [
                 {
-                    'name': eq.equipment_name,
-                    'type': eq.equipment_type,
-                    'pressure_outlier': eq.is_pressure_outlier,
-                    'temperature_outlier': eq.is_temperature_outlier,
+                    'name': eq['equipment_name'],
+                    'type': eq['equipment_type'],
+                    'pressure_outlier': eq['is_pressure_outlier'],
+                    'temperature_outlier': eq['is_temperature_outlier'],
                 }
                 for eq in outliers
             ]
