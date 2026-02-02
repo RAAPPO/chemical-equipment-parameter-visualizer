@@ -1,0 +1,11 @@
+Equipment Name,Type,Flowrate,Pressure,Temperature
+Reactor-Unit-1,Reactor,453.7,11.9,333.0
+Reactor-Unit-2,Reactor,305.4,21.4,210.1
+Reactor-Unit-3,Reactor,216.2,15.7,239.1
+Reactor-Unit-4,Reactor,466.8,33.3,346.2
+Reactor-Unit-5,Reactor,396.1,32.5,365.6
+Reactor-Unit-6,Reactor,479.7,25.6,446.7
+Reactor-Unit-7,Reactor,448.6,28.3,208.8
+Reactor-Unit-8,Reactor,378.4,31.1,204.8
+Reactor-Unit-9,Reactor,353.7,15.6,223.1
+Reactor-Unit-10,Reactor,297.6,18.4,411.8

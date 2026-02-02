@@ -1,0 +1,8 @@
+Equipment Name,Type,Flowrate,Pressure,Temperature
+Pump-101,Pump,120,5.0,100
+Pump-102,Pump,125,5.2,102
+Pump-103,Pump,130,5.1,101
+Pump-104,Pump,115,4.9,98
+Pump-Outlier,Pump,600,5.0,100
+Comp-101,Compressor,90,8.0,110
+Comp-Outlier,Compressor,95,85.0,115
