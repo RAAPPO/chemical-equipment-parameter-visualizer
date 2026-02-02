@@ -8,7 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
+    // Check if user is logged in on mount
     const token = localStorage.getItem('access_token');
     if (token) {
       setUser({ username: localStorage.getItem('username') || 'User' });
@@ -19,15 +19,42 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     try {
       const response = await authAPI.login(username, password);
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
+
+      /**
+       * FIXED: Support for both nested and flat response structures.
+       * Your authAPI.login returns response.data directly, so tokens 
+       * are usually found at response.access. This check handles both 
+       * local and production variations safely.
+       */
+      const accessToken = response.access || response.data?.access;
+      const refreshToken = response.refresh || response.data?.refresh;
+
+      if (!accessToken) {
+        throw new Error('Authentication failed: No access token received from server.');
+      }
+
+      // Save credentials to local storage
+      localStorage.setItem('access_token', accessToken);
+      localStorage.setItem('refresh_token', refreshToken);
       localStorage.setItem('username', username);
+
       setUser({ username });
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error.response?.data?.detail || 'Login failed' 
+      // Provide specific error messages for better debugging
+      let errorMessage = 'Login failed';
+
+      if (error.response?.status === 401) {
+        errorMessage = 'Invalid username or password.';
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        error: errorMessage
       };
     }
   };
