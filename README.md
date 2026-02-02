@@ -478,11 +478,9 @@ For detailed testing results, see [TESTING.md](TESTING.md)
 
 ## 👨‍💻 Author
 
-**RAAPPO**  
-*FOSSEE Semester Long Internship 2026 Candidate*
+**ADITYA V J**  
 
-- 📧 Email: [contact@raappo.cf](mailto:contact@raappo.cf)
-- 🌐 Portfolio: [raappo.cf](https://raappo.cf)
+- 📧 Email: [vjaditya2006@gmail.com](mailto:vjaditya2006@gmail.com)
 - 💼 GitHub: [@RAAPPO](https://github.com/RAAPPO)
 - 🔗 LinkedIn: [linkedin.com/in/raappo](https://linkedin.com/in/raappo)
 
@@ -504,7 +502,7 @@ For questions, issues, or feedback:
 
 - 🐛 **Report Issues**: [GitHub Issues](https://github.com/RAAPPO/chemical-equipment-parameter-visualizer/issues)
 - 💬 **Discussions**: [GitHub Discussions](https://github.com/RAAPPO/chemical-equipment-parameter-visualizer/discussions)
-- 📧 **Email**: [contact@raappo.cf](mailto:contact@raappo.cf)
+
 
 ---
 
@@ -516,7 +514,7 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 <div align="center">
 
-**Built with ❤️ for FOSSEE IIT Bombay**
+**Created for FOSSEE 2026 Internship screening Task **
 
 *Chemical Equipment Parameter Visualizer*  
 *Transforming Equipment Data into Actionable Insights*
