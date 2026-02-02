@@ -77,7 +77,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Smart database switching: PostgreSQL (production) or SQLite (local)
 
 if 'DATABASE_URL' in os.environ:
-# Production: Use database from DATABASE_URL environment variable (supports SQLite/PostgreSQL/MySQL)
+    # Production: Use database from DATABASE_URL environment variable (supports SQLite/PostgreSQL/MySQL)
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),
