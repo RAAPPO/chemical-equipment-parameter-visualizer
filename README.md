@@ -152,7 +152,7 @@ npm run dev
 ```
 
 **Web Frontend Access:**
-- 🌐 Web Application: `http://localhost:5173`
+- 🌐 Web Application: `http://localhost:3100`
 - 🔐 Default Login: `testuser` / `testpass123`
 
 **Configuration:**
