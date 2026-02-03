@@ -391,9 +391,7 @@ For detailed testing results, see [TESTING.md](TESTING.md)
 
 ---
 
-## 🎥 Demo Video
-
-📹 **Coming Soon** - Full application demonstration video (2-3 minutes)
+## 🎥 Demo Video - https://drive.google.com/file/d/1FgFaarkyl2kFiYU2P3SXBl_0P9LmYJB7/view?usp=drive_link
 
 *Demo will cover:*
 - User authentication and JWT token flow
