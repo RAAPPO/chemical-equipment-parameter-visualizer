@@ -102,4 +102,8 @@ class LoginWindow(QWidget):
         if result["success"]:
             self.login_successful.emit(user)
         else:
-            QMessageBox.critical(self, "Error", result.get('error', 'Login Failed'))
+            err_msg = result.get('error', '')
+            if "Connection" in err_msg or "refused" in err_msg:
+                QMessageBox.critical(self, "Connection Error", "Cannot reach the server. Is the Django backend running?")
+            else:
+                QMessageBox.critical(self, "Login Error", "Invalid credentials. Please try again.")

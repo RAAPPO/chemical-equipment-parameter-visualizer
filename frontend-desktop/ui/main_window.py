@@ -5,6 +5,15 @@ from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                              QFileDialog, QMessageBox, QHeaderView, QFrame)
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
+class PDFWorker(QThread):
+    finished = pyqtSignal(bool, str)
+    def __init__(self, api_client, d_id, path):
+        super().__init__()
+        self.api_client, self.d_id, self.path = api_client, d_id, path
+    def run(self):
+        res = self.api_client.download_pdf(self.d_id, self.path)
+        self.finished.emit(res["success"], res.get("error", "Success"))
+
 class DataLoadThread(QThread):
     finished = pyqtSignal(dict)
     def __init__(self, api_client):
@@ -142,7 +151,12 @@ class MainWindow(QMainWindow):
 
     def download_pdf(self, d):
         p, _ = QFileDialog.getSaveFileName(self, "Save PDF", f"{d['filename']}.pdf", "PDF (*.pdf)")
-        if p: self.api_client.download_pdf(d["id"], p)
+        if p:
+            self.pdf_worker = PDFWorker(self.api_client, d["id"], p)
+            self.pdf_worker.finished.connect(lambda success, msg: 
+                QMessageBox.information(self, "PDF Status", "Download Complete") if success 
+                else QMessageBox.warning(self, "Error", msg))
+            self.pdf_worker.start()
 
     def handle_logout(self):
         if QMessageBox.question(self, "Logout", "Exit?") == QMessageBox.Yes: self.logout_requested.emit()

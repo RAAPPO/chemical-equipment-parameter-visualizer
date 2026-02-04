@@ -32,8 +32,11 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    if (!error.response) {
+      alert("Network Error: Please check if the backend server is running at http://127.0.0.1:8100");
+      return Promise.reject(error);
+    }
     const originalRequest = error.config;
-
     // Handle 401 Unauthorized - Attempt token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
