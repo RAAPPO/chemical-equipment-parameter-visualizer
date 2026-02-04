@@ -34,25 +34,47 @@ class MainWindow(QMainWindow):
         layout.setSpacing(0)
         
         # Sidebar
+# Sidebar
         sidebar = QFrame()
         sidebar.setFixedWidth(240)
-        sidebar.setStyleSheet("background-color: #0F172A;")
+        # Updated background color and added a border for industrial depth
+        sidebar.setStyleSheet("background-color: #1E293B; border-right: 1px solid #334155;")
         s_layout = QVBoxLayout(sidebar)
-        s_layout.setContentsMargins(20, 30, 20, 30)
+        s_layout.setContentsMargins(15, 30, 15, 30)
         
         brand = QLabel("CEPV SYSTEM")
-        brand.setStyleSheet("color: white; font-size: 18px; font-weight: 800; margin-bottom: 40px;")
+        brand.setStyleSheet("color: white; font-size: 18px; font-weight: 900; margin-bottom: 40px; padding-left: 10px;")
         s_layout.addWidget(brand)
         
-        btn_style = "text-align: left; padding: 12px; background: transparent; color: #94A3B8; border: none; font-weight: 600;"
-        self.btn_up = QPushButton("📁 Upload Data")
+        # New industrial button style with hover effect
+        btn_style = """
+            QPushButton {
+                text-align: left; padding: 14px 20px; background: transparent; 
+                color: #F1F5F9; border: none; font-weight: 700; font-size: 12px;
+                border-radius: 8px; margin-bottom: 5px;
+            }
+            QPushButton:hover { background: #334155; color: #6366F1; }
+        """
+        
+        self.btn_up = QPushButton("  📁  UPLOAD NEW DATA")
         self.btn_up.setStyleSheet(btn_style)
+        self.btn_up.setCursor(Qt.PointingHandCursor)
         self.btn_up.clicked.connect(self.handle_upload)
         s_layout.addWidget(self.btn_up)
+        
         s_layout.addStretch()
         
+        # Modernized logout button to match the theme
         self.lo_btn = QPushButton("Log Out")
-        self.lo_btn.setStyleSheet("background: #EF4444; color: white; border-radius: 6px; padding: 10px; font-weight: 700;")
+        self.lo_btn.setMinimumHeight(40)
+        self.lo_btn.setCursor(Qt.PointingHandCursor)
+        self.lo_btn.setStyleSheet("""
+            QPushButton {
+                background: #EF4444; color: white; border-radius: 8px; 
+                font-weight: 800; font-size: 13px; margin: 10px;
+            }
+            QPushButton:hover { background: #DC2626; }
+        """)
         self.lo_btn.clicked.connect(self.handle_logout)
         s_layout.addWidget(self.lo_btn)
         layout.addWidget(sidebar)
