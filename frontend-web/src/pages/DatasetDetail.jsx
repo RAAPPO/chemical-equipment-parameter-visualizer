@@ -149,34 +149,37 @@ export default function DatasetDetail() {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Total Equipment</p>
-            <p className="text-3xl font-bold text-primary">{analytics?.total_equipment}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Avg Flowrate</p>
-            <p className="text-3xl font-bold text-blue-600">{analytics?.avg_flowrate?.toFixed(2)}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Avg Pressure</p>
-            <p className="text-3xl font-bold text-blue-600">{analytics?.avg_pressure?.toFixed(2)}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <p className="text-sm text-gray-600">Avg Temperature</p>
-            <p className="text-3xl font-bold text-blue-600">{analytics?.avg_temperature?.toFixed(2)}</p>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {[
+            { label: 'Total Units', value: analytics?.total_equipment, color: 'text-indigo-600', icon: '📊' },
+            { label: 'Avg Flowrate', value: `${analytics?.avg_flowrate?.toFixed(2)} m³/h`, color: 'text-blue-600', icon: '💧' },
+            { label: 'Avg Pressure', value: `${analytics?.avg_pressure?.toFixed(2)} bar`, color: 'text-emerald-600', icon: '💨' },
+            { label: 'Avg Temperature', value: `${analytics?.avg_temperature?.toFixed(2)} °C`, color: 'text-orange-600', icon: '🌡️' },
+          ].map((stat, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-all hover:shadow-md">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{stat.label}</p>
+                  <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+                </div>
+                <span className="text-2xl">{stat.icon}</span>
+              </div>
+            </div>
+          ))}
         </div>
-
         {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-bold mb-4">Equipment Type Distribution</h3>
-            <Pie data={pieData} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[450px]">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Equipment Distribution</h3>
+            <div className="flex-1 relative">
+              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            </div>
           </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-bold mb-4">Average Parameters</h3>
-            <Bar data={barData} options={{ responsive: true }} />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[450px]">
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">System Mean Averages</h3>
+            <div className="flex-1 relative">
+              <Bar data={barData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+            </div>
           </div>
         </div>
 
