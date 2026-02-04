@@ -1,6 +1,4 @@
-"""
-Dataset Detail Window - WORLD-CLASS INDUSTRIAL DESIGN
-"""
+
 import logging
 from PyQt5.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                              QTableWidget, QTableWidgetItem, QPushButton, QFrame,

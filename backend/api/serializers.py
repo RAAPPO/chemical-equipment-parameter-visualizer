@@ -77,12 +77,13 @@ class DatasetSerializer(serializers.ModelSerializer):
 
 
 class AnalyticsSerializer(serializers.Serializer):
-    """Serializer for analytics data (not model-based)."""
-    
     total_equipment = serializers.IntegerField(min_value=0)
     avg_flowrate = serializers.FloatField()
     avg_pressure = serializers.FloatField()
     avg_temperature = serializers.FloatField()
+    pt_correlation = serializers.FloatField()
+    peer_benchmarks = serializers.DictField()
+    scatter_data = serializers.ListField(child=serializers.DictField())
     equipment_type_distribution = serializers.DictField(
         child=serializers.IntegerField(min_value=0)
     )

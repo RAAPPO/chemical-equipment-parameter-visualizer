@@ -148,27 +148,38 @@ class DatasetService:
     
     @staticmethod
     def get_analytics(dataset_id: str) -> Dict[str, Any]:
-        """
-        Get analytics for a dataset.
-        
-        Args:
-            dataset_id: UUID of dataset
-            
-        Returns:
-            Dictionary with analytics data including:
-            - total_equipment (int)
-            - avg_flowrate (float)
-            - avg_pressure (float)
-            - avg_temperature (float)
-            - equipment_type_distribution (dict)
-            - outliers_count (int)
-            - outlier_equipment (list)
-            
-        Raises:
-            ValueError: If dataset not found
-        """
         try:
             dataset = Dataset.objects.prefetch_related('equipment').get(id=dataset_id)
-            return dataset.get_analytics()
+            equipment_qs = dataset.equipment.all()
+
+            # Convert to DataFrame for advanced Pandas analytics
+            df = pd.DataFrame(list(equipment_qs.values(
+                'equipment_type', 'flowrate', 'pressure', 'temperature'
+            )))
+
+            # Calculate Pearson Correlation between Pressure and Temp
+            correlation = df['pressure'].corr(df['temperature']) if len(df) > 1 else 0
+
+            # Peer Benchmarking: Avg parameters grouped by Type
+            peer_stats = df.groupby('equipment_type').agg({
+                'flowrate': 'mean',
+                'pressure': 'mean',
+                'temperature': 'mean'
+            }).round(2).to_dict('index')
+
+            # Get original analytics from model for outliers/counts
+            base_analytics = dataset.get_analytics()
+
+            # Merge with advanced insights
+            base_analytics.update({
+                'pt_correlation': round(correlation, 3),
+                'peer_benchmarks': peer_stats,
+                # Prepare data for Scatter Plot (P vs T)
+                'scatter_data': [
+                    {'x': eq.pressure, 'y': eq.temperature, 'name': eq.equipment_name}
+                    for eq in equipment_qs
+                ]
+            })
+            return base_analytics
         except Dataset.DoesNotExist:
             raise ValueError(f"Dataset {dataset_id} not found")

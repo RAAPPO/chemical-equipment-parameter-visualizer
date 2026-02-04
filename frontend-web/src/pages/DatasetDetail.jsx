@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { datasetAPI, equipmentAPI } from '../services/api';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
+import { Pie, Scatter } from 'react-chartjs-2';
+import { PointElement } from 'chart.js';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title, PointElement);
 
 export default function DatasetDetail() {
   const { id } = useParams();
@@ -70,21 +71,30 @@ export default function DatasetDetail() {
     ],
   }), [analytics]);
 
-  const barData = useMemo(() => ({
-    labels: ['Flowrate', 'Pressure', 'Temperature'],
-    datasets: [
-      {
-        label: 'Average Values',
-        data: [
-          analytics?.avg_flowrate || 0,
-          analytics?.avg_pressure || 0,
-          analytics?.avg_temperature || 0,
-        ],
-        backgroundColor: ['#1E3A8A', '#3B82F6', '#60A5FA'],
-      },
-    ],
+  const scatterData = useMemo(() => ({
+    datasets: [{
+      label: 'Pressure vs Temperature',
+      data: analytics?.scatter_data || [],
+      backgroundColor: '#3B82F6',
+    }],
   }), [analytics]);
 
+  const scatterOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: { title: { display: true, text: 'Pressure (bar)' } },
+      y: { title: { display: true, text: 'Temperature (°C)' } }
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (ctx) => `${ctx.raw.name}: ${ctx.raw.x} bar, ${ctx.raw.y}°C`
+        }
+      }
+    }
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -183,15 +193,11 @@ export default function DatasetDetail() {
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[450px]">
-            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">System Mean Averages</h3>
+            <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Process Envelope (P vs T)</h3>
             <div className="flex-1 relative" style={{ height: '300px' }}>
-              <Bar
-                data={barData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: { y: { beginAtZero: true } }
-                }}
+              <Scatter
+                data={scatterData}
+                options={scatterOptions}
               />
             </div>
           </div>
