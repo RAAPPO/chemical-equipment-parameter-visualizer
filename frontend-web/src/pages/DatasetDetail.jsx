@@ -171,14 +171,28 @@ export default function DatasetDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[450px]">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">Equipment Distribution</h3>
-            <div className="flex-1 relative">
-              <Pie data={pieData} options={{ maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+            <div className="flex-1 relative" style={{ height: '300px' }}>
+              <Pie
+                data={pieData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { position: 'bottom' } }
+                }}
+              />
             </div>
           </div>
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-[450px]">
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-6">System Mean Averages</h3>
-            <div className="flex-1 relative">
-              <Bar data={barData} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} />
+            <div className="flex-1 relative" style={{ height: '300px' }}>
+              <Bar
+                data={barData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: { y: { beginAtZero: true } }
+                }}
+              />
             </div>
           </div>
         </div>
