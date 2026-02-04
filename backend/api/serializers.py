@@ -1,7 +1,4 @@
-"""
-DRF Serializers - Clean, efficient, with proper validation.
-Industry standard: Explicit field definitions, custom validations.
-"""
+
 from rest_framework import serializers
 from django.core.validators import FileExtensionValidator
 from .models import Dataset, Equipment
@@ -77,13 +74,25 @@ class DatasetSerializer(serializers.ModelSerializer):
 
 
 class AnalyticsSerializer(serializers.Serializer):
+    """
+    Serializer for the Enhanced Dynamic Dashboard.
+    Includes Safety, Distribution, and Correlation data.
+    """
     total_equipment = serializers.IntegerField(min_value=0)
     avg_flowrate = serializers.FloatField()
     avg_pressure = serializers.FloatField()
     avg_temperature = serializers.FloatField()
+    
+    # Advanced Analytics Fields
     pt_correlation = serializers.FloatField()
     peer_benchmarks = serializers.DictField()
+    
+    # Visualization Data
     scatter_data = serializers.ListField(child=serializers.DictField())
+    distribution_stats = serializers.DictField() # For Box Plots
+    correlation_matrix = serializers.ListField(child=serializers.DictField()) # For Heatmaps
+    
+    # Outliers
     equipment_type_distribution = serializers.DictField(
         child=serializers.IntegerField(min_value=0)
     )
