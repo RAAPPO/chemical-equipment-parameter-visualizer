@@ -110,8 +110,8 @@ class CSVUploadView(APIView):
             )
 
 
-class EquipmentViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Equipment listing (read-only)."""
+class EquipmentViewSet(viewsets.ModelViewSet):  # Changed to ModelViewSet
+    """ViewSet for Equipment listing, updating, and deleting."""
     serializer_class = EquipmentSerializer
     permission_classes = [IsAuthenticated]
     
@@ -124,6 +124,55 @@ class EquipmentViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(dataset_id=dataset_id)
         
         return queryset
+
+    def update(self, request, *args, **kwargs):
+        """Update equipment parameters"""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        
+        # Recalculate dataset statistics
+        dataset = instance.dataset
+        equipment_list = dataset.equipment.all()
+        if equipment_list:
+            dataset.avg_flowrate = sum(e.flowrate for e in equipment_list) / len(equipment_list)
+            dataset.avg_pressure = sum(e.pressure for e in equipment_list) / len(equipment_list)
+            dataset.avg_temperature = sum(e.temperature for e in equipment_list) / len(equipment_list)
+            dataset.save()
+        
+        logger.info(f"Equipment {instance.id} updated by {request.user.username}")
+        
+        return Response(serializer.data)
+    
+    def destroy(self, request, *args, **kwargs):
+        """Delete equipment and recalculate dataset stats"""
+        instance = self.get_object()
+        dataset = instance.dataset
+        
+        # Delete equipment
+        instance.delete()
+        
+        # Recalculate dataset statistics
+        equipment_list = dataset.equipment.all()
+        if equipment_list:
+            dataset.total_equipment = len(equipment_list)
+            dataset.avg_flowrate = sum(e.flowrate for e in equipment_list) / len(equipment_list)
+            dataset.avg_pressure = sum(e.pressure for e in equipment_list) / len(equipment_list)
+            dataset.avg_temperature = sum(e.temperature for e in equipment_list) / len(equipment_list)
+            dataset.save()
+        else:
+            # If no equipment left, reset stats
+            dataset.total_equipment = 0
+            dataset.avg_flowrate = None
+            dataset.avg_pressure = None
+            dataset.avg_temperature = None
+            dataset.save()
+        
+        logger.info(f"Equipment {instance.id} deleted by {request.user.username}")
+        
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(['GET'])
