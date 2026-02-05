@@ -168,3 +168,76 @@ def health_check(request):
         'message': 'Chemical Equipment Parameter Visualizer API',
         'version': '1.0.0'
     })
+
+# --- ADDED REGISTRATION LOGIC ---
+from django.contrib.auth.models import User
+from django.contrib.auth.hashers import make_password
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    """
+    User registration endpoint.
+    Public access (no authentication required).
+    """
+    username = request.data.get('username', '').strip()
+    email = request.data.get('email', '').strip()
+    password = request.data.get('password', '')
+    
+    # Validation
+    if not username or len(username) < 3:
+        return Response(
+            {'error': 'Username must be at least 3 characters'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if not email or '@' not in email:
+        return Response(
+            {'error': 'Valid email is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if not password or len(password) < 8:
+        return Response(
+            {'error': 'Password must be at least 8 characters'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if username exists
+    if User.objects.filter(username=username).exists():
+        return Response(
+            {'error': 'Username already taken'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if email exists
+    if User.objects.filter(email=email).exists():
+        return Response(
+            {'error': 'Email already registered'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Create user
+        user = User.objects.create(
+            username=username,
+            email=email,
+            password=make_password(password)
+        )
+        
+        logger.info(f"New user registered: {username}")
+        
+        return Response({
+            'message': 'Registration successful',
+            'username': username,
+            'email': email
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        logger.error(f"Registration failed: {e}")
+        return Response(
+            {'error': 'Registration failed. Please try again.'},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
