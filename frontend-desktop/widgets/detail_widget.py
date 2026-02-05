@@ -13,7 +13,11 @@ import matplotlib.patches as patches
 logger = logging.getLogger(__name__)
 
 class DatasetDetailWindow(QMainWindow):
- 
+    """
+    World-Class Desktop Dashboard (PyQt5)
+    Features: Spacious Web-Like Table, Dynamic Math, Dark Mode.
+    """
+    
     def __init__(self, api_client, dataset, parent=None):
         super().__init__(parent)
         self.api_client = api_client
@@ -32,25 +36,22 @@ class DatasetDetailWindow(QMainWindow):
         self.resize(1280, 850)
         self.setWindowTitle(f"Analysis: {self.dataset.get('filename')}")
         
-        # --- STATIC SHELL ---
         self.central = QWidget()
         self.setCentralWidget(self.central)
         self.main_layout = QVBoxLayout(self.central)
         self.main_layout.setSpacing(0)
         self.main_layout.setContentsMargins(0,0,0,0)
 
-        # 1. TOOLBAR HEADER
+        # 1. HEADER
         self.header = QFrame()
         h_layout = QHBoxLayout(self.header)
         h_layout.setContentsMargins(24, 12, 24, 12)
         h_layout.setSpacing(20)
         
-        # Title
         self.title_lbl = QLabel(f"{self.dataset.get('filename')}")
         self.title_lbl.setStyleSheet("font-size: 18px; font-weight: 900;")
         h_layout.addWidget(self.title_lbl)
         
-        # Filter
         f_lbl = QLabel("FILTER:")
         f_lbl.setStyleSheet("font-weight: 700; color: #94A3B8; font-size: 11px;")
         h_layout.addWidget(f_lbl)
@@ -63,13 +64,12 @@ class DatasetDetailWindow(QMainWindow):
         
         h_layout.addStretch()
 
-        # Switcher Pills
         self.btn_group = QButtonGroup(self)
         self.btn_group.setExclusive(True)
         self.pill_layout = QHBoxLayout()
         self.pill_layout.setSpacing(0)
         
-        views = [("safety", "🛡️ Process Safety"), ("dist", "📊 Distribution"), ("corr", "🔗 Correlation"), ("data", "📋 Equipment Data")]
+        views = [("safety", "🛡️ Safety"), ("dist", "📊 Dist"), ("corr", "🔗 Corr"), ("data", "📋 Data")]
         self.view_btns = {}
         
         for i, (id, txt) in enumerate(views):
@@ -84,16 +84,14 @@ class DatasetDetailWindow(QMainWindow):
         h_layout.addLayout(self.pill_layout)
         h_layout.addSpacing(20)
         
-        # Theme Toggle
         self.theme_btn = QPushButton("🌙")
-        self.theme_btn.setFixedSize(100,36)
+        self.theme_btn.setFixedSize(36, 36)
         self.theme_btn.setCursor(Qt.PointingHandCursor)
         self.theme_btn.clicked.connect(self.toggle_theme)
         h_layout.addWidget(self.theme_btn)
 
-        # Close
-        close_btn = QPushButton("Close ✖")
-        close_btn.setFixedSize(80, 30)
+        close_btn = QPushButton("✖")
+        close_btn.setFixedSize(30, 30)
         close_btn.setCursor(Qt.PointingHandCursor)
         close_btn.clicked.connect(self.close)
         close_btn.setStyleSheet("color: #94A3B8; border: none; font-weight: bold; font-size: 16px;")
@@ -115,22 +113,19 @@ class DatasetDetailWindow(QMainWindow):
             self.kpis[k] = v
             v_box.addWidget(l); v_box.addWidget(v)
             k_layout.addLayout(v_box)
-            
         k_layout.addStretch()
-
         self.main_layout.addWidget(self.kpi_frame)
 
-        # 3. DYNAMIC STAGE CONTAINER
+        # 3. STAGE
         self.stage_container = QWidget()
         self.stage_layout = QVBoxLayout(self.stage_container)
         self.stage_layout.setContentsMargins(24, 24, 24, 24)
         self.main_layout.addWidget(self.stage_container)
 
     def add_shadow(self, widget):
-        """Adds a subtle web-like shadow to cards."""
         shadow = QGraphicsDropShadowEffect()
         shadow.setBlurRadius(15)
-        shadow.setColor(QColor(0, 0, 0, 15)) # Very light shadow
+        shadow.setColor(QColor(0, 0, 0, 15))
         shadow.setOffset(0, 4)
         widget.setGraphicsEffect(shadow)
 
@@ -143,7 +138,6 @@ class DatasetDetailWindow(QMainWindow):
                 self.equipment = res_e["data"]
                 self.filtered_equipment = self.equipment
                 
-                # Populate Filter
                 types = sorted(list(set(e['equipment_type'] for e in self.equipment)))
                 self.filter_combo.blockSignals(True)
                 self.filter_combo.clear()
@@ -161,13 +155,12 @@ class DatasetDetailWindow(QMainWindow):
         self.update_ui()
 
     def apply_theme(self):
-        """Styles the Persistent Shell."""
         if self.is_dark_mode:
             bg_main = "#0F172A"; bg_card = "#1E293B"; text_main = "#F8FAFC"; text_sub = "#94A3B8"; border = "#334155"
-            self.theme_btn.setText("Light mode ☀️")
+            self.theme_btn.setText("☀️")
         else:
             bg_main = "#F8FAFC"; bg_card = "#FFFFFF"; text_main = "#1E293B"; text_sub = "#64748B"; border = "#E2E8F0"
-            self.theme_btn.setText("Dark mode 🌙")
+            self.theme_btn.setText("🌙")
 
         self.central.setStyleSheet(f"background-color: {bg_main};")
         self.header.setStyleSheet(f"background: {bg_card}; border-bottom: 1px solid {border};")
@@ -178,21 +171,16 @@ class DatasetDetailWindow(QMainWindow):
         for k, v in self.kpis.items():
             v.setStyleSheet(f"font-size: 24px; font-weight: 900; color: {colors[k]}; border: none;")
 
-        # Style Pills
         for i, (id, btn) in enumerate(self.view_btns.items()):
             radius = "border-top-left-radius: 6px; border-bottom-left-radius: 6px;" if i==0 else \
                      "border-top-right-radius: 6px; border-bottom-right-radius: 6px;" if i==3 else ""
             border_right = "border-right: none;" if i < 3 else ""
-            
             is_active = btn.isChecked()
             btn_bg = ("#3B82F6" if not self.is_dark_mode else "#60A5FA") if is_active else bg_card
             btn_fg = ("white" if not self.is_dark_mode else "#0F172A") if is_active else text_sub
-            
             btn.setStyleSheet(f"""
-                QPushButton {{ 
-                    background: {btn_bg}; border: 1px solid {border}; color: {btn_fg}; 
-                    padding: 8px 20px; font-weight: 700; {radius} {border_right}
-                }}
+                QPushButton {{ background: {btn_bg}; border: 1px solid {border}; color: {btn_fg}; 
+                    padding: 8px 20px; font-weight: 700; {radius} {border_right} }}
             """)
 
         self.filter_combo.setStyleSheet(f"color: {text_main}; background: {bg_card}; border: 1px solid {border}; padding: 4px;")
@@ -211,19 +199,25 @@ class DatasetDetailWindow(QMainWindow):
         self.update_ui()
 
     def clear_stage(self):
-        """Safely delete all widgets in stage."""
         while self.stage_layout.count():
             item = self.stage_layout.takeAt(0)
             if item.widget(): item.widget().deleteLater()
 
     def update_ui(self):
-        # 1. Update KPIs
-        self.kpis['units'].setText(str(len(self.filtered_equipment)))
-        self.kpis['flow'].setText(f"{self.analytics.get('avg_flowrate',0)} m³/h")
-        self.kpis['press'].setText(f"{self.analytics.get('avg_pressure',0)} bar")
-        self.kpis['temp'].setText(f"{self.analytics.get('avg_temperature',0)} °C")
+        # Dynamic Math
+        count = len(self.filtered_equipment)
+        if count > 0:
+            avg_flow = sum(e['flowrate'] for e in self.filtered_equipment) / count
+            avg_press = sum(e['pressure'] for e in self.filtered_equipment) / count
+            avg_temp = sum(e['temperature'] for e in self.filtered_equipment) / count
+        else:
+            avg_flow = avg_press = avg_temp = 0
 
-        # 2. Clear & Rebuild Stage
+        self.kpis['units'].setText(str(count))
+        self.kpis['flow'].setText(f"{avg_flow:.2f} m³/h")
+        self.kpis['press'].setText(f"{avg_press:.2f} bar")
+        self.kpis['temp'].setText(f"{avg_temp:.2f} °C")
+
         self.clear_stage()
 
         if self.current_view == "data":
@@ -232,12 +226,13 @@ class DatasetDetailWindow(QMainWindow):
             self.build_chart_view()
 
     def build_data_view(self):
+        # Style
         bg_card = "#1E293B" if self.is_dark_mode else "white"
         text_main = "#F8FAFC" if self.is_dark_mode else "#1E293B"
-        border = "#334155" if self.is_dark_mode else "#E2E8F0" # Lighter border for clean look
+        border = "#334155" if self.is_dark_mode else "#E2E8F0"
         header_bg = "#0F172A" if self.is_dark_mode else "#F8FAFC"
         
-        container = QFrame() # Container for shadow
+        container = QFrame()
         container.setStyleSheet(f"background: {bg_card}; border-radius: 12px; border: 1px solid {border};")
         self.add_shadow(container)
         
@@ -253,21 +248,47 @@ class DatasetDetailWindow(QMainWindow):
         self.table.setShowGrid(False)
         self.table.setColumnCount(6)
         self.table.setHorizontalHeaderLabels(["Name", "Type", "Flow", "Press", "Temp", "Status"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.table.verticalHeader().setVisible(False)
+        
+        # --- FIXED TABLE SPACING ---
+        # 1. Stretch logic: Share space between Name (2x) and Type (1x)
+        # 2. Fixed widths for data columns to ensure they aren't cramped
+        header = self.table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.Stretch) # Name (Flexible)
+        header.setSectionResizeMode(1, QHeaderView.Stretch) # Type (Flexible)
+        
+        # Data Columns: Fixed generous width (e.g. 100px)
+        header.setSectionResizeMode(2, QHeaderView.Fixed); self.table.setColumnWidth(2, 100) # Flow
+        header.setSectionResizeMode(3, QHeaderView.Fixed); self.table.setColumnWidth(3, 100) # Press
+        header.setSectionResizeMode(4, QHeaderView.Fixed); self.table.setColumnWidth(4, 100) # Temp
+        header.setSectionResizeMode(5, QHeaderView.Fixed); self.table.setColumnWidth(5, 120) # Status
+        
+        # Make rows taller (Web-like spacing)
+        self.table.verticalHeader().setDefaultSectionSize(50) 
+        
         self.table.setRowCount(len(self.filtered_equipment))
         
         for r, eq in enumerate(self.filtered_equipment):
             self.table.setItem(r,0, QTableWidgetItem(eq['equipment_name']))
             self.table.setItem(r,1, QTableWidgetItem(eq['equipment_type']))
-            self.table.setItem(r,2, QTableWidgetItem(f"{eq['flowrate']:.2f}"))
-            self.table.setItem(r,3, QTableWidgetItem(f"{eq['pressure']:.2f}"))
-            self.table.setItem(r,4, QTableWidgetItem(f"{eq['temperature']:.2f}"))
+            
+            # Center Align Numbers
+            for c, val in enumerate([eq['flowrate'], eq['pressure'], eq['temperature']], start=2):
+                item = QTableWidgetItem(f"{val:.2f}")
+                item.setTextAlignment(Qt.AlignCenter)
+                self.table.setItem(r, c, item)
             
             alert = eq.get('is_pressure_outlier') or eq.get('is_temperature_outlier')
-            item = QTableWidgetItem("⚠️ ALERT" if alert else "OK")
-            item.setForeground(QColor("#EF4444") if alert else QColor("#10B981"))
-            item.setFont(QFont("Arial", weight=QFont.Bold))
-            self.table.setItem(r,5, item)
+            
+            # Status Badge
+            w = QWidget()
+            wl = QHBoxLayout(w); wl.setContentsMargins(0,0,0,0); wl.setAlignment(Qt.AlignCenter)
+            lbl = QLabel("⚠️ ALERT" if alert else "OK")
+            lbl.setFixedSize(80, 26)
+            lbl.setAlignment(Qt.AlignCenter)
+            lbl.setStyleSheet(f"background: {'#EF4444' if alert else '#10B981'}; color: white; border-radius: 4px; font-weight: bold; font-size: 11px;")
+            wl.addWidget(lbl)
+            self.table.setCellWidget(r, 5, w)
             
         layout.addWidget(self.table)
         self.stage_layout.addWidget(container)
@@ -282,25 +303,24 @@ class DatasetDetailWindow(QMainWindow):
         split_layout.setContentsMargins(0,0,0,0)
         split_layout.setSpacing(24)
         
-        # A. MAIN CHART CARD (Left)
+        # Chart Card
         c_frame = QFrame()
         c_frame.setStyleSheet(f"background:{bg_card}; border:1px solid {border}; border-radius:12px;")
         self.add_shadow(c_frame)
         cv = QVBoxLayout(c_frame)
         cv.setContentsMargins(20,20,20,20)
         
-        # Chart Title
         titles = {'safety': "Process Envelope", 'dist': "Flowrate Distribution", 'corr': "Correlation Analysis"}
         title_lbl = QLabel(titles.get(self.current_view, ""))
         title_lbl.setStyleSheet(f"color: {text_sub}; font-weight: 800; font-size: 12px; letter-spacing: 1px; border: none;")
         cv.addWidget(title_lbl)
         
-        self.figure = Figure(figsize=(8, 5), dpi=100) # Created Fresh
+        self.figure = Figure(figsize=(8, 5), dpi=100)
         self.canvas = FigureCanvas(self.figure)
         cv.addWidget(self.canvas)
         split_layout.addWidget(c_frame, 65)
         
-        # B. INSIGHT CARD (Right) - Now Holds Sidebar Chart or List
+        # Insight Card
         i_frame = QFrame()
         i_frame.setStyleSheet(f"background:{bg_card}; border:1px solid {border}; border-radius:12px;")
         self.add_shadow(i_frame)
@@ -311,14 +331,12 @@ class DatasetDetailWindow(QMainWindow):
         lbl.setStyleSheet(f"color: {text_sub}; font-weight: 800; font-size: 12px; letter-spacing: 1px; border: none;")
         iv.addWidget(lbl)
         
-        # The content area for the sidebar (Can be ScrollArea OR Chart)
         self.side_content_area = QVBoxLayout() 
         iv.addLayout(self.side_content_area)
         
         split_layout.addWidget(i_frame, 35)
         self.stage_layout.addWidget(split_container)
         
-        # Render Contents
         self.render_charts()
         self.populate_sidebar()
 
@@ -366,31 +384,28 @@ class DatasetDetailWindow(QMainWindow):
         self.canvas.draw()
 
     def populate_sidebar(self):
-        """Populates the Right Sidebar with either Text Lists OR Secondary Charts."""
         text_color = "white" if self.is_dark_mode else "#1E293B"
         bg_color = "#1E293B" if self.is_dark_mode else "white"
+        filter_type = self.filter_combo.currentText()
         
-        # 1. DISTRIBUTION VIEW -> SHOW PIE CHART (Like Web)
         if self.current_view == 'dist':
             self.side_figure = Figure(figsize=(4, 4), dpi=100)
             self.side_figure.patch.set_facecolor(bg_color)
             self.side_canvas = FigureCanvas(self.side_figure)
             self.side_content_area.addWidget(self.side_canvas)
-            
             ax = self.side_figure.add_subplot(111)
+            
             dist = self.analytics.get('equipment_type_distribution', {})
+            labels = [filter_type] if filter_type != "All Equipment" and filter_type in dist else list(dist.keys())
+            values = [dist[filter_type]] if filter_type != "All Equipment" and filter_type in dist else list(dist.values())
             
-            # Web colors
             colors = ['#6366F1', '#3B82F6', '#10B981', '#F59E0B', '#EF4444']
-            wedges, texts, autotexts = ax.pie(dist.values(), labels=dist.keys(), colors=colors, autopct='%1.1f%%', startangle=90)
-            
-            # Style text
+            wedges, texts, autotexts = ax.pie(values, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
             for t in texts: t.set_color(text_color); t.set_fontsize(8)
             for t in autotexts: t.set_color('white'); t.set_fontsize(8); t.set_weight('bold')
             self.side_canvas.draw()
             return
 
-        # 2. SAFETY VIEW -> SHOW ALERT LIST
         if self.current_view == 'safety':
             scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setStyleSheet("border:none; background:transparent;")
             content = QWidget(); content.setStyleSheet("background:transparent;")
@@ -398,7 +413,9 @@ class DatasetDetailWindow(QMainWindow):
             scroll.setWidget(content)
             self.side_content_area.addWidget(scroll)
 
-            outliers = self.analytics.get('outlier_equipment', [])
+            all_outliers = self.analytics.get('outlier_equipment', [])
+            outliers = [o for o in all_outliers if o['type'] == filter_type] if filter_type != "All Equipment" else all_outliers
+
             if not outliers:
                 lbl = QLabel("✅ All Systems Nominal"); lbl.setStyleSheet("color: #10B981; font-weight: bold;")
                 layout.addWidget(lbl)
@@ -414,7 +431,6 @@ class DatasetDetailWindow(QMainWindow):
             layout.addStretch()
             return
 
-        # 3. CORRELATION VIEW -> SHOW HEATMAP TEXT GRID
         if self.current_view == 'corr':
             scroll = QScrollArea(); scroll.setWidgetResizable(True); scroll.setStyleSheet("border:none; background:transparent;")
             content = QWidget(); content.setStyleSheet("background:transparent;")
@@ -428,7 +444,6 @@ class DatasetDetailWindow(QMainWindow):
                 lbl.setStyleSheet(f"color: {text_color}; font-weight: bold; margin-top: 10px; border:none;")
                 layout.addWidget(lbl)
                 
-                # Mini Grid
                 g = QFrame()
                 g.setStyleSheet("background: transparent; border: none;")
                 gl = QHBoxLayout(g); gl.setContentsMargins(0,0,0,0); gl.setSpacing(4)

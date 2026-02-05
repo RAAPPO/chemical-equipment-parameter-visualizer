@@ -55,19 +55,54 @@ export default function DatasetDetail() {
     } catch (e) { alert('Download failed'); }
   }, [id]);
 
-  // --- FILTER LOGIC ---
+  // --- DYNAMIC RECALCULATION LOGIC ---
+
+  // 1. Filter the Raw Equipment List
   const filteredEquipment = useMemo(() => {
     if (typeFilter === 'All') return equipment;
     return equipment.filter(e => e.equipment_type === typeFilter);
   }, [equipment, typeFilter]);
 
+  // 2. Calculate KPI Averages on the Fly (Dynamic Math)
+  const dynamicStats = useMemo(() => {
+    if (!filteredEquipment.length) return { flow: 0, press: 0, temp: 0 };
+    
+    const total = filteredEquipment.reduce((acc, curr) => ({
+        flow: acc.flow + curr.flowrate,
+        press: acc.press + curr.pressure,
+        temp: acc.temp + curr.temperature
+    }), { flow: 0, press: 0, temp: 0 });
+
+    const count = filteredEquipment.length;
+    return {
+        flow: (total.flow / count).toFixed(2),
+        press: (total.press / count).toFixed(2),
+        temp: (total.temp / count).toFixed(2)
+    };
+  }, [filteredEquipment]);
+
+  // 3. Filter Analytics Data (Charts & Outliers)
   const filteredAnalytics = useMemo(() => {
     if (!analytics) return null;
+    
+    // If Global, return mostly original data
     if (typeFilter === 'All') return analytics;
 
-    // Filter Scatter Data locally
+    // Filter Scatter Data (Points)
     const filteredScatter = analytics.scatter_data.filter(d => d.type === typeFilter);
-    return { ...analytics, scatter_data: filteredScatter };
+    
+    // Filter Outliers List (Sidebar)
+    const filteredOutliers = analytics.outlier_equipment.filter(o => o.type === typeFilter);
+
+    // Filter Distribution (Pie Chart)
+    const filteredDist = { [typeFilter]: analytics.equipment_type_distribution[typeFilter] || 0 };
+
+    return { 
+        ...analytics, 
+        scatter_data: filteredScatter,
+        outlier_equipment: filteredOutliers,
+        equipment_type_distribution: filteredDist
+    };
   }, [analytics, typeFilter]);
 
   const uniqueTypes = useMemo(() => {
@@ -85,7 +120,7 @@ export default function DatasetDetail() {
     plugins: { legend: { labels: { color: isDark ? '#E2E8F0' : '#1E293B' } } }
   };
 
-  // 1. SAFETY VIEW DATA
+  // 1. SAFETY VIEW DATA (Updated to use filteredAnalytics)
   const safetyData = useMemo(() => {
     if (!filteredAnalytics) return null;
     const outliers = new Set(filteredAnalytics.outlier_equipment.map(o => o.name));
@@ -106,23 +141,25 @@ export default function DatasetDetail() {
     };
   }, [filteredAnalytics, isDark]);
 
-  // 2. DISTRIBUTION VIEW DATA (Floating Bar Range)
+  // 2. DISTRIBUTION VIEW DATA (Filtered Bars)
   const distributionData = useMemo(() => {
     if (!analytics) return null;
-    // Note: We use global analytics for benchmarks to allow comparison even when filtered
-    const labels = Object.keys(analytics.peer_benchmarks);
+    
+    // Filter the benchmarks keys based on selection
+    const keys = Object.keys(analytics.peer_benchmarks).filter(k => typeFilter === 'All' || k === typeFilter);
+    
     return {
-      labels,
+      labels: keys,
       datasets: [{
         label: 'Flowrate Range (Min to Max)',
-        data: labels.map(t => [analytics.peer_benchmarks[t].flowrate_min, analytics.peer_benchmarks[t].flowrate_max]),
+        data: keys.map(t => [analytics.peer_benchmarks[t].flowrate_min, analytics.peer_benchmarks[t].flowrate_max]),
         backgroundColor: isDark ? '#60A5FA' : '#3B82F6',
         barPercentage: 0.5,
       }]
     };
-  }, [analytics, isDark]);
+  }, [analytics, isDark, typeFilter]);
 
-  // 3. CORRELATION VIEW DATA (Bubble)
+  // 3. CORRELATION VIEW DATA (Filtered Bubbles)
   const correlationData = useMemo(() => {
     if (!filteredAnalytics) return null;
     return {
@@ -140,7 +177,7 @@ export default function DatasetDetail() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col">
 
-      {/* --- WORLD-CLASS TOOLBAR HEADER --- */}
+      {/* --- TOOLBAR HEADER --- */}
       <header className="bg-white dark:bg-darkcard border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 px-6 py-3 shadow-sm flex items-center justify-between">
 
         {/* Left: Title & Filter */}
@@ -187,22 +224,22 @@ export default function DatasetDetail() {
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
           <button onClick={() => setIsDark(!isDark)} className="p-2 text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
-            {isDark ? 'light mode ☀️' : 'dark mode 🌙'}
+            {isDark ? '☀️' : '🌙'}
           </button>
           <button onClick={handleDownloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
             Generat Report
           </button>
-          <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-red-500 px-2 font-bold">close✕</button>
+          <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-red-500 px-2 font-bold">✕</button>
         </div>
       </header>
 
-      {/* --- KPI BAR (Always Visible) --- */}
+      {/* --- KPI BAR (Dynamically Calculated) --- */}
       <div className="bg-white dark:bg-darkcard border-b border-slate-200 dark:border-slate-700 px-6 py-4 grid grid-cols-4 gap-4">
         {[
           { l: 'Active Units', v: filteredEquipment.length, c: 'text-indigo-600 dark:text-indigo-400' },
-          { l: 'Avg Flowrate', v: analytics?.avg_flowrate, u: 'm³/h', c: 'text-blue-600 dark:text-blue-400' },
-          { l: 'Avg Pressure', v: analytics?.avg_pressure, u: 'bar', c: 'text-emerald-600 dark:text-emerald-400' },
-          { l: 'Avg Temp', v: analytics?.avg_temperature, u: '°C', c: 'text-orange-600 dark:text-orange-400' },
+          { l: 'Avg Flowrate', v: dynamicStats.flow, u: 'm³/h', c: 'text-blue-600 dark:text-blue-400' },
+          { l: 'Avg Pressure', v: dynamicStats.press, u: 'bar', c: 'text-emerald-600 dark:text-emerald-400' },
+          { l: 'Avg Temp', v: dynamicStats.temp, u: '°C', c: 'text-orange-600 dark:text-orange-400' },
         ].map((k, i) => (
           <div key={i} className="flex flex-col">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{k.l}</span>
@@ -260,16 +297,16 @@ export default function DatasetDetail() {
               </div>
             </div>
 
-            {/* RIGHT: INSIGHT PANEL (1/3 Width) */}
+            {/* RIGHT: INSIGHT PANEL (1/3 Width) - Uses filteredAnalytics now */}
             <div className="bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm overflow-y-auto">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Insights</h3>
 
               {activeView === 'safety' && (
                 <div className="space-y-3">
-                  {analytics.outlier_equipment.length === 0 ? (
+                  {filteredAnalytics.outlier_equipment.length === 0 ? (
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-bold text-center">✅ All Systems Nominal</div>
                   ) : (
-                    analytics.outlier_equipment.map((eq, i) => (
+                    filteredAnalytics.outlier_equipment.map((eq, i) => (
                       <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm">
                         <div className="font-bold text-red-900 dark:text-red-200">{eq.name}</div>
                         <div className="text-red-600 dark:text-red-400 text-xs">Parameter Excursion Detected</div>
@@ -282,11 +319,11 @@ export default function DatasetDetail() {
               {activeView === 'distribution' && (
                 <div className="space-y-4">
                   <div className="h-48"><Pie data={{
-                    labels: Object.keys(analytics.equipment_type_distribution),
-                    datasets: [{ data: Object.values(analytics.equipment_type_distribution), backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B'] }]
+                    labels: Object.keys(filteredAnalytics.equipment_type_distribution),
+                    datasets: [{ data: Object.values(filteredAnalytics.equipment_type_distribution), backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B'] }]
                   }} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
                   <div className="text-sm space-y-2">
-                    {Object.entries(analytics.equipment_type_distribution).map(([k, v]) => (
+                    {Object.entries(filteredAnalytics.equipment_type_distribution).map(([k, v]) => (
                       <div key={k} className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
                         <span className="font-bold">{k}</span><span className="text-slate-500">{v} Units</span>
                       </div>
