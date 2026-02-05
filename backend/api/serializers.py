@@ -1,4 +1,3 @@
-
 from rest_framework import serializers
 from django.core.validators import FileExtensionValidator
 from .models import Dataset, Equipment
@@ -6,10 +5,34 @@ from .models import Dataset, Equipment
 
 class EquipmentSerializer(serializers.ModelSerializer):
     is_outlier = serializers.ReadOnlyField()
+
     class Meta:
         model = Equipment
-        fields = ['id', 'equipment_name', 'equipment_type', 'flowrate', 'pressure', 'temperature', 'is_pressure_outlier', 'is_temperature_outlier', 'is_outlier']
+        fields = [
+            'id', 'equipment_name', 'equipment_type', 
+            'flowrate', 'pressure', 'temperature', 
+            'is_pressure_outlier', 'is_temperature_outlier', 'is_outlier'
+        ]
         read_only_fields = ['id', 'is_pressure_outlier', 'is_temperature_outlier']
+
+    def validate_flowrate(self, value):
+        """Validate flowrate is positive"""
+        if value < 0:
+            raise serializers.ValidationError("Flowrate must be positive")
+        return value
+    
+    def validate_pressure(self, value):
+        """Validate pressure is positive"""
+        if value < 0:
+            raise serializers.ValidationError("Pressure must be positive")
+        return value
+    
+    def validate_temperature(self, value):
+        """Validate temperature is reasonable"""
+        if value < -273.15:  # Absolute zero
+            raise serializers.ValidationError("Temperature cannot be below absolute zero")
+        return value
+
 
 class DatasetListSerializer(serializers.ModelSerializer):
     equipment_count = serializers.IntegerField(read_only=True)
@@ -40,8 +63,8 @@ class AnalyticsSerializer(serializers.Serializer):
     # Advanced Stats
     pt_correlation = serializers.FloatField()
     peer_benchmarks = serializers.DictField()
-    distribution_stats = serializers.DictField() # New
-    correlation_matrix = serializers.ListField(child=serializers.DictField()) # New
+    distribution_stats = serializers.DictField() 
+    correlation_matrix = serializers.ListField(child=serializers.DictField()) 
     
     # Visualization Data
     scatter_data = serializers.ListField(child=serializers.DictField())
