@@ -1,0 +1,303 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}Datasets - Admin Portal{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-row">
+        <div>
+            <h1 class="page-title">📊 Datasets</h1>
+            <p class="page-subtitle">Manage uploaded CSV datasets and equipment data</p>
+        </div>
+        <a href="{% url 'admin:api_dataset_add' %}" class="btn-primary">
+            ➕ Upload New Dataset
+        </a>
+    </div>
+</div>
+
+<!-- Search Bar -->
+<div class="search-section">
+    <form method="get" class="search-form">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="Search datasets by filename..."
+            class="search-input">
+        <button type="submit" class="btn-search">🔍 Search</button>
+    </form>
+</div>
+
+<!-- Dataset Cards Grid -->
+{% if cl.result_list %}
+<div class="dataset-grid">
+    {% for dataset in cl.result_list %}
+    <div class="dataset-card">
+        <div class="card-header">
+            <input type="checkbox" name="_selected_action" value="{{ dataset.id }}" class="checkbox">
+            <span class="dataset-icon">📄</span>
+        </div>
+
+        <div class="card-body">
+            <h3 class="dataset-title">{{ dataset.filename }}</h3>
+
+            <div class="dataset-stats">
+                <div class="stat-item">
+                    <span class="stat-icon">⚙️</span>
+                    <span class="stat-value">{{ dataset.total_equipment }}</span>
+                    <span class="stat-label">Equipment</span>
+                </div>
+
+                <div class="stat-item">
+                    <span class="stat-icon">📈</span>
+                    <span class="stat-value">{{ dataset.avg_flowrate|floatformat:1 }}</span>
+                    <span class="stat-label">Avg Flow</span>
+                </div>
+
+                <div class="stat-item">
+                    <span class="stat-icon">🔥</span>
+                    <span class="stat-value">{{ dataset.avg_temperature|floatformat:1 }}</span>
+                    <span class="stat-label">Avg Temp</span>
+                </div>
+            </div>
+
+            <div class="dataset-meta">
+                <span class="meta-date">📅 {{ dataset.uploaded_at|date:"M d, Y" }}</span>
+            </div>
+        </div>
+
+        <div class="card-footer">
+            <a href="{% url 'admin:api_dataset_change' dataset.id %}" class="btn-card-action">
+                View Details →
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">📂</div>
+    <h2>No datasets found</h2>
+    <p>Upload your first dataset to get started</p>
+    <a href="{% url 'admin:api_dataset_add' %}" class="btn-primary-large">
+        ➕ Upload Dataset
+    </a>
+</div>
+{% endif %}
+
+<!-- Pagination -->
+{% if cl.result_list %}
+<div class="pagination-section">
+    <span class="pagination-info">Showing {{ cl.result_list|length }} dataset{{ cl.result_list|pluralize }}</span>
+</div>
+{% endif %}
+
+<style>
+    .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+
+    .btn-primary {
+        background: #3B82F6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .btn-primary:hover {
+        background: #2563EB;
+    }
+
+    .search-section {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+
+    .search-form {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .search-input {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border: 1px solid #D1D5DB;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #3B82F6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .btn-search {
+        background: #3B82F6;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    /* Dataset Cards Grid */
+    .dataset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .dataset-card {
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E5E7EB;
+        transition: all 0.2s;
+    }
+
+    .dataset-card:hover {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #F3F4F6;
+    }
+
+    .checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .dataset-icon {
+        font-size: 1.5rem;
+    }
+
+    .card-body {
+        padding: 1.5rem;
+    }
+
+    .dataset-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1F2937;
+        margin-bottom: 1rem;
+        word-break: break-word;
+    }
+
+    .dataset-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-icon {
+        display: block;
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-value {
+        display: block;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1F2937;
+    }
+
+    .stat-label {
+        display: block;
+        font-size: 0.75rem;
+        color: #6B7280;
+    }
+
+    .dataset-meta {
+        padding-top: 1rem;
+        border-top: 1px solid #F3F4F6;
+    }
+
+    .meta-date {
+        font-size: 0.875rem;
+        color: #6B7280;
+    }
+
+    .card-footer {
+        padding: 1rem 1.5rem;
+        background: #F9FAFB;
+        border-top: 1px solid #F3F4F6;
+        border-radius: 0 0 0.75rem 0.75rem;
+    }
+
+    .btn-card-action {
+        display: inline-block;
+        color: #3B82F6;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+    }
+
+    .btn-card-action:hover {
+        text-decoration: underline;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1F2937;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        color: #6B7280;
+        margin-bottom: 1.5rem;
+    }
+
+    .btn-primary-large {
+        display: inline-block;
+        background: #3B82F6;
+        color: white;
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .pagination-section {
+        text-align: center;
+        padding: 1.5rem;
+        color: #6B7280;
+    }
+</style>
+{% endblock %}
