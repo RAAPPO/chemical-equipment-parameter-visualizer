@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE|default:" en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl" {% endif %}>
+
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% block extrahead %}{% endblock %}
+</head>
+
+<body class="bg-gray-100 text-gray-800 antialiased" data-admin-utc-offset="{% now " Z" %}">
+
+    <header class="bg-primary text-white py-4 px-6 shadow-md mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'admin:index' %}" class="text-xl font-bold text-white hover:text-gray-200 transition">
+                Chemical Equipment Admin
+            </a>
+
+            <div class="flex items-center gap-6">
+                {% if user.is_active and user.is_staff %}
+                <span class="text-sm font-medium">
+                    Welcome, <strong>{{ user.username }}</strong>
+                </span>
+
+                <div class="flex items-center gap-3">
+                    <a href="{% url 'admin:logout' %}"
+                        class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold text-sm text-white no-underline">
+                        Logout
+                    </a>
+                </div>
+                {% else %}
+                <a href="{% url 'admin:login' %}" class="text-white font-medium">Login</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4" id="main">
+        {% block messages %}
+        {% if messages %}
+        <div class="max-w-7xl mx-auto mb-6">
+            <ul class="messagelist">
+                {% for message in messages %}
+                <li{% if message.tags %}
+                    class="p-4 mb-2 rounded-lg text-white font-medium {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-blue-600{% endif %}"
+                    {% endif %}>
+                    {{ message|capfirst }}
+                    </li>
+                    {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        <div id="content" class="{% block coltype %}colM{% endblock %}">
+            {% block pretitle %}{% endblock %}
+
+            {% block content_title %}
+            {% if title %}
+            <h1 class="text-3xl font-bold text-gray-800 mb-8">{{ title }}</h1>
+            {% endif %}
+            {% endblock %}
+
+            {% block content %}
+            {% block object-tools %}{% endblock %}
+            {{ content }}
+            {% endblock %}
+
+            {% block sidebar %}{% endblock %}
+            <br class="clear">
+        </div>
+    </div>
+
+    {% block footer %}<div id="footer"></div>{% endblock %}
+
+</body>
+
+</html>
