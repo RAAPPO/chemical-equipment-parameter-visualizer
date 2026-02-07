@@ -1,0 +1,152 @@
+/* Page Header */
+.header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Actions Bar */
+.actions-bar {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.search-box {
+    display: flex;
+    gap: 0.5rem;
+    flex: 1;
+    max-width: 400px;
+}
+
+.search-btn {
+    margin-left: 0.5rem;
+}
+
+/* Filters Panel */
+.filters-panel {
+    display: none;
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E5E7EB;
+}
+
+.filters-title {
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.filter-section {
+    margin-bottom: 1.5rem;
+}
+
+.filter-heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #6B7280;
+}
+
+.filter-list {
+    list-style: none;
+    padding: 0;
+}
+
+.filter-item {
+    margin-bottom: 0.25rem;
+}
+
+.filter-link {
+    display: block;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    text-decoration: none;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.filter-link:hover {
+    background: #F3F4F6;
+}
+
+.filter-link.active-filter {
+    background: #EEF2FF;
+    color: #1E40AF;
+    font-weight: 600;
+}
+
+/* Actions Form */
+.actions-form {
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #E5E7EB;
+}
+
+.actions-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.actions-label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.action-counter {
+    color: #6B7280;
+    font-size: 0.875rem;
+}
+
+/* Sort Links */
+.sort-link {
+    color: #6B7280;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.sort-link:hover {
+    color: #1F2937;
+}
+
+.sort-link.sorted {
+    color: #1E40AF;
+    font-weight: 700;
+}
+
+/* Pagination */
+.pagination-container {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.result-count {
+    color: #6B7280;
+    font-size: 0.875rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.page-info {
+    padding: 0.625rem 1rem;
+    color: #374151;
+    font-weight: 600;
+}
