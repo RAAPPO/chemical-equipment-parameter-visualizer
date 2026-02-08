@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTheme } from '../context/ThemeContext';
 import { datasetAPI, equipmentAPI } from '../services/api';
 import EditEquipmentModal from '../components/EditEquipmentModal';
-import AdvancedCharts from '../components/AdvancedCharts';
-import { exportEquipmentAsExcel } from '../utils/chartExport';
+import AdvancedCharts from '../components/AdvancedCharts'; // ADDED IMPORT
+import { exportEquipmentAsExcel } from '../utils/chartExport'; // ADDED IMPORT
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
   LinearScale, BarElement, Title, PointElement, LineElement
@@ -16,7 +15,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 export default function DatasetDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isDark, toggleTheme } = useTheme();
 
   // Data State
   const [dataset, setDataset] = useState(null);
@@ -25,12 +23,18 @@ export default function DatasetDetail() {
   const [loading, setLoading] = useState(true);
 
   // UX State
-  const [activeView, setActiveView] = useState('safety');
-  const [typeFilter, setTypeFilter] = useState('All');
+  const [activeView, setActiveView] = useState('safety'); // safety | distribution | correlation | data | charts
+  const [typeFilter, setTypeFilter] = useState('All'); // Global Filter
+  const [isDark, setIsDark] = useState(false);
 
-  // Modal State
+  // ADDED STATE FOR MODAL
   const [editingEquipment, setEditingEquipment] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  // Dark Mode Toggle
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [isDark]);
 
   useEffect(() => { loadData(); }, [id]);
 
@@ -58,10 +62,12 @@ export default function DatasetDetail() {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${dataset?.filename || 'report'}.pdf`);
+      link.setAttribute('download', 'report.pdf');
       document.body.appendChild(link); link.click(); link.remove();
     } catch (e) { alert('Download failed'); }
-  }, [id, dataset]);
+  }, [id]);
+
+  // --- HANDLERS FOR EDIT/DELETE ---
 
   const handleEditEquipment = (item) => {
     setEditingEquipment(item);
@@ -80,7 +86,10 @@ export default function DatasetDetail() {
   };
 
   const handleDeleteEquipment = async (equipmentId) => {
-    if (!window.confirm('Are you sure you want to delete this equipment?')) return;
+    if (!window.confirm('Are you sure you want to delete this equipment? This will recalculate all dataset statistics.')) {
+      return;
+    }
+
     try {
       await datasetAPI.deleteEquipment(equipmentId);
       await loadData();
@@ -91,6 +100,8 @@ export default function DatasetDetail() {
     }
   };
 
+  // --- DYNAMIC RECALCULATION LOGIC ---
+
   const filteredEquipment = useMemo(() => {
     if (typeFilter === 'All') return equipment;
     return equipment.filter(e => e.equipment_type === typeFilter);
@@ -98,11 +109,13 @@ export default function DatasetDetail() {
 
   const dynamicStats = useMemo(() => {
     if (!filteredEquipment.length) return { flow: 0, press: 0, temp: 0 };
+
     const total = filteredEquipment.reduce((acc, curr) => ({
       flow: acc.flow + curr.flowrate,
       press: acc.press + curr.pressure,
       temp: acc.temp + curr.temperature
     }), { flow: 0, press: 0, temp: 0 });
+
     const count = filteredEquipment.length;
     return {
       flow: (total.flow / count).toFixed(2),
@@ -114,9 +127,11 @@ export default function DatasetDetail() {
   const filteredAnalytics = useMemo(() => {
     if (!analytics) return null;
     if (typeFilter === 'All') return analytics;
-    const filteredScatter = analytics.scatter_data?.filter(d => d.type === typeFilter) || [];
-    const filteredOutliers = analytics.outlier_equipment?.filter(o => o.type === typeFilter) || [];
-    const filteredDist = { [typeFilter]: analytics.equipment_type_distribution?.[typeFilter] || 0 };
+
+    const filteredScatter = analytics.scatter_data.filter(d => d.type === typeFilter);
+    const filteredOutliers = analytics.outlier_equipment.filter(o => o.type === typeFilter);
+    const filteredDist = { [typeFilter]: analytics.equipment_type_distribution[typeFilter] || 0 };
+
     return {
       ...analytics,
       scatter_data: filteredScatter,
@@ -130,275 +145,235 @@ export default function DatasetDetail() {
     return ['All', ...new Set(equipment.map(e => e.equipment_type))];
   }, [equipment]);
 
+  // --- CHART CONFIG ---
+  const commonOptions = {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { grid: { color: isDark ? '#334155' : '#E2E8F0' }, ticks: { color: isDark ? '#94A3B8' : '#64748B' } },
+      y: { grid: { color: isDark ? '#334155' : '#E2E8F0' }, ticks: { color: isDark ? '#94A3B8' : '#64748B' } }
+    },
+    plugins: { legend: { labels: { color: isDark ? '#E2E8F0' : '#1E293B' } } }
+  };
+
   const safetyData = useMemo(() => {
-    if (!filteredAnalytics?.scatter_data) return null;
-    const outliers = new Set(filteredAnalytics.outlier_equipment?.map(o => o.name) || []);
+    if (!filteredAnalytics) return null;
+    const outliers = new Set(filteredAnalytics.outlier_equipment.map(o => o.name));
     return {
       datasets: [
         {
           label: 'Safe Operation',
           data: filteredAnalytics.scatter_data.filter(d => !outliers.has(d.name)),
-          backgroundColor: '#10B981',
+          backgroundColor: isDark ? '#34D399' : '#10B981',
         },
         {
           label: 'Critical Alerts',
           data: filteredAnalytics.scatter_data.filter(d => outliers.has(d.name)),
-          backgroundColor: '#EF4444',
-          pointRadius: 8,
-          pointStyle: 'triangle',
+          backgroundColor: isDark ? '#F87171' : '#EF4444',
+          pointRadius: 8, pointStyle: 'triangle',
         }
       ]
     };
-  }, [filteredAnalytics]);
+  }, [filteredAnalytics, isDark]);
 
   const distributionData = useMemo(() => {
-    if (!analytics?.peer_benchmarks) return null;
+    if (!analytics) return null;
     const keys = Object.keys(analytics.peer_benchmarks).filter(k => typeFilter === 'All' || k === typeFilter);
     return {
       labels: keys,
       datasets: [{
         label: 'Flowrate Range (Min to Max)',
         data: keys.map(t => [analytics.peer_benchmarks[t].flowrate_min, analytics.peer_benchmarks[t].flowrate_max]),
-        backgroundColor: '#3B82F6',
+        backgroundColor: isDark ? '#60A5FA' : '#3B82F6',
         barPercentage: 0.5,
       }]
     };
-  }, [analytics, typeFilter]);
+  }, [analytics, isDark, typeFilter]);
 
   const correlationData = useMemo(() => {
-    if (!filteredAnalytics?.scatter_data) return null;
+    if (!filteredAnalytics) return null;
     return {
       datasets: [{
         label: 'P vs T (Size = Flowrate)',
-        data: filteredAnalytics.scatter_data.map(d => ({ x: d.x, y: d.y, r: Math.max(3, (d.r || 10) / 15) })),
-        backgroundColor: 'rgba(79, 70, 229, 0.6)',
+        data: filteredAnalytics.scatter_data.map(d => ({ x: d.x, y: d.y, r: Math.max(3, d.r / 15) })),
+        backgroundColor: isDark ? 'rgba(129, 140, 248, 0.6)' : 'rgba(79, 70, 229, 0.6)',
       }]
     };
-  }, [filteredAnalytics]);
+  }, [filteredAnalytics, isDark]);
 
-  const commonOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { position: 'bottom' } }
-  };
 
-  if (loading) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!dataset) return null;
+  if (loading) return <div className="min-h-screen bg-slate-50 dark:bg-darkbg flex items-center justify-center text-slate-500 font-bold">Loading Intelligence...</div>;
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'} transition-colors duration-300`}>
+    <div className="min-h-screen bg-slate-50 dark:bg-darkbg text-slate-900 dark:text-slate-100 transition-colors duration-300 flex flex-col">
 
-      {/* COMPACT HEADER */}
-      <div className="bg-primary text-white py-4 px-6 shadow-md">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 flex-wrap">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="text-white/80 hover:text-white text-sm font-semibold whitespace-nowrap"
-              >
-                ← Back
-              </button>
-              <div className="h-6 w-px bg-white/30"></div>
-              <h1 className="text-xl font-bold">{dataset.filename}</h1>
-              <div className="h-6 w-px bg-white/30"></div>
-              <span className="text-white/80 text-sm">
-                {new Date(dataset.uploaded_at).toLocaleDateString('en-GB')}
-              </span>
-              <div className="h-6 w-px bg-white/30"></div>
-              <span className="text-white/80 text-sm font-semibold">
-                {dataset.total_equipment} Equipment
-              </span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                onClick={toggleTheme}
-                className="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm font-semibold transition"
-              >
-                {isDark ? 'Light ☀️' : 'Dark 🌙'}
-              </button>
-              <button
-                onClick={handleDownloadPDF}
-                className="bg-green-100 text-green-700 hover:bg-green-200 px-4 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap"
-              >
-                📄 Download PDF
-              </button>
-            </div>
+      {/* --- TOOLBAR HEADER --- */}
+      <header className="bg-white dark:bg-darkcard border-b border-slate-200 dark:border-slate-700 sticky top-0 z-20 px-6 py-3 shadow-sm flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <div>
+            <h1 className="text-lg font-black tracking-tight">{dataset?.filename}</h1>
+            <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Dashboard</p>
           </div>
-        </div>
-      </div>
-
-      {/* COMPACT FILTER + TABS ROW */}
-      <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-6 py-3`}>
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 flex-wrap">
-          <div className="flex items-center gap-3">
-            <label className="text-sm font-semibold whitespace-nowrap">Filter:</label>
+          <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+            <span className="text-xs font-bold text-slate-400 uppercase">Filter:</span>
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className={`border ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'} rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
+              className="bg-transparent text-sm font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer"
             >
-              {uniqueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+              {uniqueTypes.map(t => <option key={t} value={t}>{t} Equipment</option>)}
             </select>
-            <span className="text-sm text-gray-500">
-              {filteredEquipment.length} shown
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 overflow-x-auto">
-            {[
-              { id: 'safety', label: 'Safety', icon: '🛡️' },
-              { id: 'distribution', label: 'Distribution', icon: '📊' },
-              { id: 'correlation', label: 'Correlation', icon: '🔗' },
-              { id: 'data', label: 'Data', icon: '📋' },
-              { id: 'charts', label: 'Charts', icon: '📈' }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveView(tab.id)}
-                className={`px-4 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap ${activeView === tab.id
-                    ? 'bg-primary text-white'
-                    : isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-              >
-                {tab.icon} {tab.label}
-              </button>
-            ))}
           </div>
         </div>
+
+        <div className="bg-slate-100 dark:bg-slate-800 p-1 rounded-lg border border-slate-200 dark:border-slate-700 flex">
+          {[
+            { id: 'safety', icon: '🛡️', label: 'Safety' },
+            { id: 'distribution', icon: '📊', label: 'Distribution' },
+            { id: 'correlation', icon: '🔗', label: 'Correlation' },
+            { id: 'data', icon: '📋', label: 'Data' },
+          ].map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setActiveView(v.id)}
+              className={`px-4 py-1.5 rounded-md text-sm font-bold transition-all ${activeView === v.id
+                ? 'bg-white dark:bg-slate-600 text-blue-600 dark:text-white shadow-sm'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+            >
+              <span className="mr-2">{v.icon}</span>{v.label}
+            </button>
+          ))}
+          {/* Add this in your tab navigation */}
+          <button
+            className={`px-4 py-2 ${activeView === 'charts' ? 'border-b-2 border-primary text-primary font-bold' : 'text-gray-600'}`}
+            onClick={() => setActiveView('charts')}
+          >
+            📊 Advanced Charts
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button onClick={() => setIsDark(!isDark)} className="p-2 text-lg hover:bg-slate-100 dark:hover:bg-slate-700 rounded-full transition-colors">
+            {isDark ? '☀️' : '🌙'}
+          </button>
+          <button onClick={handleDownloadPDF} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-colors">
+            Generate Report
+          </button>
+          <button onClick={() => navigate('/dashboard')} className="text-slate-400 hover:text-red-500 px-2 font-bold">✕</button>
+        </div>
+      </header>
+
+      {/* --- KPI BAR --- */}
+      <div className="bg-white dark:bg-darkcard border-b border-slate-200 dark:border-slate-700 px-6 py-4 grid grid-cols-4 gap-4">
+        {[
+          { l: 'Active Units', v: filteredEquipment.length, c: 'text-indigo-600 dark:text-indigo-400' },
+          { l: 'Avg Flowrate', v: dynamicStats.flow, u: 'm³/h', c: 'text-blue-600 dark:text-blue-400' },
+          { l: 'Avg Pressure', v: dynamicStats.press, u: 'bar', c: 'text-emerald-600 dark:text-emerald-400' },
+          { l: 'Avg Temp', v: dynamicStats.temp, u: '°C', c: 'text-orange-600 dark:text-orange-400' },
+        ].map((k, i) => (
+          <div key={i} className="flex flex-col">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{k.l}</span>
+            <span className={`text-2xl font-black ${k.c}`}>{k.v}<span className="text-sm text-slate-400 ml-1 font-medium">{k.u}</span></span>
+          </div>
+        ))}
       </div>
 
-      {/* KPI CARDS */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          {[
-            { label: 'Active Units', value: filteredEquipment.length, color: 'text-indigo-600' },
-            { label: 'Avg Flowrate', value: dynamicStats.flow, unit: 'm³/h', color: 'text-blue-600' },
-            { label: 'Avg Pressure', value: dynamicStats.press, unit: 'bar', color: 'text-green-600' },
-            { label: 'Avg Temperature', value: dynamicStats.temp, unit: '°C', color: 'text-orange-600' }
-          ].map((kpi, i) => (
-            <div key={i} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow p-6`}>
-              <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{kpi.label}</p>
-              <p className={`text-3xl font-bold ${kpi.color}`}>
-                {kpi.value}
-                {kpi.unit && <span className="text-sm text-gray-500 ml-1">{kpi.unit}</span>}
-              </p>
+      {/* --- MAIN STAGE --- */}
+      <main className="flex-1 p-6 overflow-hidden flex flex-col">
+        {/* ADD TAB CONTENT */}
+        {activeView === 'charts' && dataset && (
+          <div className="p-6 overflow-auto">
+            <div className="mb-6 flex justify-end">
+              <button
+                onClick={() => exportEquipmentAsExcel(equipment, `${dataset.filename}_data.csv`)}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
+              >
+                📊 Export to Excel (CSV)
+              </button>
             </div>
-          ))}
-        </div>
+            <AdvancedCharts
+              equipment={equipment || []}
+              analytics={{
+                avg_flowrate: dataset.avg_flowrate,
+                avg_pressure: dataset.avg_pressure,
+                avg_temperature: dataset.avg_temperature,
+                equipment_type_distribution: equipment?.reduce((acc, eq) => {
+                  acc[eq.equipment_type] = (acc[eq.equipment_type] || 0) + 1;
+                  return acc;
+                }, {}) || {}
+              }}
+            />
+          </div>
+        )}
 
-        {/* CONTENT AREA */}
-        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg shadow p-6`}>
-          {activeView === 'charts' && (
-            <div>
-              <div className="mb-6 flex justify-end">
-                <button
-                  onClick={() => exportEquipmentAsExcel(equipment, `${dataset.filename}_data.csv`)}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2"
-                >
-                  📊 Export to Excel
-                </button>
-              </div>
-              <AdvancedCharts
-                equipment={equipment}
-                analytics={{
-                  avg_flowrate: dataset.avg_flowrate,
-                  avg_pressure: dataset.avg_pressure,
-                  avg_temperature: dataset.avg_temperature,
-                  equipment_type_distribution: equipment.reduce((acc, eq) => {
-                    acc[eq.equipment_type] = (acc[eq.equipment_type] || 0) + 1;
-                    return acc;
-                  }, {})
-                }}
-              />
-            </div>
-          )}
-
-          {activeView === 'data' && (
-            <div className="overflow-x-auto">
-              <table className="min-w-full">
-                <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
+        {activeView === 'data' ? (
+          <div className="flex-1 bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col shadow-sm">
+            <div className="overflow-auto flex-1">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800 text-xs uppercase font-bold text-slate-500 sticky top-0 z-10">
                   <tr>
-                    {['Name', 'Type', 'Flow', 'Pressure', 'Temp', 'Status', 'Actions'].map(h => (
-                      <th key={h} className={`px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        {h}
-                      </th>
-                    ))}
+                    {['Name', 'Type', 'Flow', 'Pressure', 'Temp', 'Status', 'Actions'].map(h => <th key={h} className="px-6 py-3">{h}</th>)}
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {filteredEquipment.map(eq => (
-                    <tr key={eq.id} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'} transition`}>
-                      <td className="px-6 py-4 text-sm font-medium">{eq.equipment_name}</td>
-                      <td className={`px-6 py-4 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{eq.equipment_type}</td>
-                      <td className="px-6 py-4 text-sm font-mono">{eq.flowrate.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-sm font-mono">{eq.pressure.toFixed(2)}</td>
-                      <td className="px-6 py-4 text-sm font-mono">{eq.temperature.toFixed(2)}</td>
-                      <td className="px-6 py-4">
-                        {eq.is_pressure_outlier || eq.is_temperature_outlier ? (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800">
-                            ⚠️ Alert
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                            OK
-                          </span>
-                        )}
+                    <tr key={eq.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-3 font-medium">{eq.equipment_name}</td>
+                      <td className="px-6 py-3 text-slate-500 dark:text-slate-400">{eq.equipment_type}</td>
+                      <td className="px-6 py-3 font-mono">{eq.flowrate}</td>
+                      <td className="px-6 py-3 font-mono">{eq.pressure}</td>
+                      <td className="px-6 py-3 font-mono">{eq.temperature}</td>
+                      <td className="px-6 py-3">
+                        {eq.is_pressure_outlier || eq.is_temperature_outlier
+                          ? <span className="text-red-500 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">⚠️ ALERT</span>
+                          : <span className="text-green-500 font-bold text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">OK</span>}
                       </td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => handleEditEquipment(eq)}
-                          className="text-blue-600 hover:text-blue-800 mr-3 text-sm font-medium"
-                        >
-                          ✏️ Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteEquipment(eq.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-medium"
-                        >
-                          🗑️ Delete
-                        </button>
+                      <td className="px-6 py-3">
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleEditEquipment(eq)}
+                            className="text-blue-600 hover:text-blue-800 font-bold text-xs uppercase tracking-tighter"
+                          >
+                            ✏️ Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEquipment(eq.id)}
+                            className="text-red-600 hover:text-red-800 font-bold text-xs uppercase tracking-tighter"
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-
-          {activeView !== 'data' && activeView !== 'charts' && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <h3 className="text-lg font-bold mb-4">
-                  {activeView === 'safety' && 'Safety Analysis'}
-                  {activeView === 'distribution' && 'Equipment Distribution'}
-                  {activeView === 'correlation' && 'Correlation Analysis'}
-                </h3>
-                <div style={{ height: '400px' }}>
+          </div>
+        ) : (
+          activeView !== 'charts' && (
+            <div className="grid grid-cols-3 gap-6 h-full min-h-[500px]">
+              <div className="col-span-2 bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col">
+                <h2 className="text-lg font-bold mb-4">
+                  {activeView === 'safety' && 'Process Envelope Analysis'}
+                  {activeView === 'distribution' && 'Equipment Flowrate Ranges'}
+                  {activeView === 'correlation' && 'Multi-Variable Correlation'}
+                </h2>
+                <div className="flex-1 relative">
                   {activeView === 'safety' && safetyData && <Scatter data={safetyData} options={commonOptions} />}
                   {activeView === 'distribution' && distributionData && <Bar data={distributionData} options={{ ...commonOptions, indexAxis: 'y' }} />}
                   {activeView === 'correlation' && correlationData && <Bubble data={correlationData} options={commonOptions} />}
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-bold mb-4">Live Insights</h3>
-                {activeView === 'safety' && filteredAnalytics && (
+              <div className="bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm overflow-y-auto">
+                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Insights</h3>
+                {activeView === 'safety' && (
                   <div className="space-y-3">
-                    {filteredAnalytics.outlier_equipment?.length === 0 ? (
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-bold text-center">
-                        ✅ All Systems Nominal
-                      </div>
+                    {filteredAnalytics.outlier_equipment.length === 0 ? (
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-bold text-center">✅ All Systems Nominal</div>
                     ) : (
-                      filteredAnalytics.outlier_equipment?.map((eq, i) => (
+                      filteredAnalytics.outlier_equipment.map((eq, i) => (
                         <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm">
                           <div className="font-bold text-red-900 dark:text-red-200">{eq.name}</div>
                           <div className="text-red-600 dark:text-red-400 text-xs">Parameter Excursion Detected</div>
@@ -407,44 +382,31 @@ export default function DatasetDetail() {
                     )}
                   </div>
                 )}
-                {activeView === 'distribution' && filteredAnalytics && (
-                  <div>
-                    <div style={{ height: '200px' }} className="mb-4">
-                      <Pie
-                        data={{
-                          labels: Object.keys(filteredAnalytics.equipment_type_distribution || {}),
-                          datasets: [{
-                            data: Object.values(filteredAnalytics.equipment_type_distribution || {}),
-                            backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B']
-                          }]
-                        }}
-                        options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }}
-                      />
-                    </div>
+
+                {activeView === 'distribution' && (
+                  <div className="space-y-4">
+                    <div className="h-48"><Pie data={{
+                      labels: Object.keys(filteredAnalytics.equipment_type_distribution),
+                      datasets: [{ data: Object.values(filteredAnalytics.equipment_type_distribution), backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B'] }]
+                    }} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
                     <div className="text-sm space-y-2">
-                      {Object.entries(filteredAnalytics.equipment_type_distribution || {}).map(([k, v]) => (
-                        <div key={k} className="flex justify-between border-b border-gray-200 dark:border-gray-700 pb-1">
-                          <span className="font-bold">{k}</span>
-                          <span className="text-gray-500">{v} Units</span>
+                      {Object.entries(filteredAnalytics.equipment_type_distribution).map(([k, v]) => (
+                        <div key={k} className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
+                          <span className="font-bold">{k}</span><span className="text-slate-500">{v} Units</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                {activeView === 'correlation' && analytics?.correlation_matrix && (
-                  <div className="space-y-2">
+
+                {activeView === 'correlation' && analytics.correlation_matrix && (
+                  <div className="space-y-1">
                     {analytics.correlation_matrix.map(row => (
                       <div key={row.variable} className="text-xs">
-                        <div className="font-bold uppercase mb-1">{row.variable}</div>
-                        <div className="grid grid-cols-3 gap-1">
+                        <div className="font-bold uppercase mb-1">{row.variable} vs:</div>
+                        <div className="grid grid-cols-3 gap-1 mb-3">
                           {['flowrate', 'pressure', 'temperature'].map(m => (
-                            <div
-                              key={m}
-                              className={`p-2 rounded text-center font-mono ${Math.abs(row[m]) > 0.7
-                                ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold'
-                                : 'bg-gray-100 dark:bg-gray-800'
-                                }`}
-                            >
+                            <div key={m} className={`p-2 rounded text-center font-mono ${Math.abs(row[m]) > 0.7 ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold' : 'bg-slate-50 dark:bg-slate-800'}`}>
                               {row[m]}
                             </div>
                           ))}
@@ -455,9 +417,9 @@ export default function DatasetDetail() {
                 )}
               </div>
             </div>
-          )}
-        </div>
-      </div>
+          )
+        )}
+      </main>
 
       <EditEquipmentModal
         equipment={editingEquipment}

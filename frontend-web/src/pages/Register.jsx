@@ -26,6 +26,7 @@ export default function Register() {
         e.preventDefault();
         setError('');
 
+        // Validation
         if (formData.password !== formData.confirmPassword) {
             setError('Passwords do not match');
             return;
@@ -45,6 +46,7 @@ export default function Register() {
                 password: formData.password
             });
 
+            // Success - redirect to login
             alert('Registration successful! Please login.');
             navigate('/login');
 
@@ -57,15 +59,15 @@ export default function Register() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700">
-            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-8">
+            <div className="bg-white p-8 rounded-lg shadow-2xl w-96">
                 <div className="text-center mb-8">
-                    <h1 className="text-3xl font-bold text-primary mb-2">Create Account</h1>
-                    <p className="text-gray-600 text-sm">Chemical Equipment Visualizer</p>
+                    <h1 className="text-3xl font-bold text-primary">Create Account</h1>
+                    <p className="text-gray-600 mt-2">Chemical Equipment Visualizer</p>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
                             Username
                         </label>
                         <input
@@ -73,7 +75,7 @@ export default function Register() {
                             name="username"
                             value={formData.username}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             placeholder="johndoe"
                             required
                             minLength={3}
@@ -81,7 +83,7 @@ export default function Register() {
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
                             Email
                         </label>
                         <input
@@ -89,14 +91,14 @@ export default function Register() {
                             name="email"
                             value={formData.email}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             placeholder="john@example.com"
                             required
                         />
                     </div>
 
                     <div className="mb-4">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
                             Password
                         </label>
                         <input
@@ -104,7 +106,7 @@ export default function Register() {
                             name="password"
                             value={formData.password}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             placeholder="••••••••"
                             required
                             minLength={8}
@@ -113,7 +115,7 @@ export default function Register() {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-gray-700 text-sm font-semibold mb-2">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
                             Confirm Password
                         </label>
                         <input
@@ -121,14 +123,14 @@ export default function Register() {
                             name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                             placeholder="••••••••"
                             required
                         />
                     </div>
 
                     {error && (
-                        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
                             {error}
                         </div>
                     )}
@@ -136,16 +138,16 @@ export default function Register() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary hover:bg-blue-800 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50"
+                        className="w-full bg-primary text-white py-2 rounded-md hover:bg-blue-800 transition duration-200 disabled:opacity-50"
                     >
-                        {loading ? 'Creating Account...' : 'Create Account'}
+                        {loading ? 'Creating Account...' : 'Register'}
                     </button>
                 </form>
 
                 <p className="text-center text-sm text-gray-600 mt-6">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-primary hover:underline font-semibold">
-                        Sign in here
+                    <Link to="/login" className="text-primary hover:underline font-bold">
+                        Login here
                     </Link>
                 </p>
             </div>

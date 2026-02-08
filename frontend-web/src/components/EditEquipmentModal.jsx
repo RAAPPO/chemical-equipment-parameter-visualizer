@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useTheme } from '../context/ThemeContext'; // ADDED IMPORT
 
 export default function EditEquipmentModal({ equipment, isOpen, onClose, onSave }) {
-    const { isDark } = useTheme(); // ADDED AT TOP OF COMPONENT
     const [formData, setFormData] = useState({
         equipment_name: '',
         equipment_type: '',
@@ -49,153 +47,132 @@ export default function EditEquipmentModal({ equipment, isOpen, onClose, onSave 
         }
     };
 
-    // REPLACE THE ENTIRE MODAL DIV with the logic below
+    if (!isOpen) return null;
+
     return (
-        <>
-            {isOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className={`${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border rounded-lg shadow-xl p-6 w-full max-w-md`}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-2xl font-bold">Edit Equipment</h2>
-                            <button
-                                onClick={onClose}
-                                className={`text-2xl ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}
-                            >
-                                ×
-                            </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-2xl font-bold text-gray-800">Edit Equipment</h2>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-500 hover:text-gray-700 text-2xl"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Equipment Name
+                        </label>
+                        <input
+                            type="text"
+                            name="equipment_name"
+                            value={formData.equipment_name}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Equipment Type
+                        </label>
+                        <select
+                            name="equipment_type"
+                            value={formData.equipment_type}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                            required
+                        >
+                            <option value="Pump">Pump</option>
+                            <option value="Compressor">Compressor</option>
+                            <option value="Valve">Valve</option>
+                            <option value="Heatexchanger">Heat Exchanger</option>
+                            <option value="Reactor">Reactor</option>
+                            <option value="Condenser">Condenser</option>
+                            <option value="Tank">Tank</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Flowrate
+                            </label>
+                            <input
+                                type="number"
+                                name="flowrate"
+                                value={formData.flowrate}
+                                onChange={handleChange}
+                                step="0.01"
+                                min="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                required
+                            />
                         </div>
 
-                        <form onSubmit={handleSubmit}>
-                            <div className="mb-4">
-                                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Equipment Name
-                                </label>
-                                <input
-                                    type="text"
-                                    name="equipment_name"
-                                    value={formData.equipment_name}
-                                    onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${isDark
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                        }`}
-                                    required
-                                />
-                            </div>
+                        <div>
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Pressure
+                            </label>
+                            <input
+                                type="number"
+                                name="pressure"
+                                value={formData.pressure}
+                                onChange={handleChange}
+                                step="0.01"
+                                min="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                required
+                            />
+                        </div>
 
-                            <div className="mb-4">
-                                <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    Equipment Type
-                                </label>
-                                <select
-                                    name="equipment_type"
-                                    value={formData.equipment_type}
-                                    onChange={handleChange}
-                                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${isDark
-                                        ? 'bg-gray-700 border-gray-600 text-white'
-                                        : 'bg-white border-gray-300 text-gray-900'
-                                        }`}
-                                    required
-                                >
-                                    <option value="Pump">Pump</option>
-                                    <option value="Compressor">Compressor</option>
-                                    <option value="Valve">Valve</option>
-                                    <option value="Heatexchanger">Heat Exchanger</option>
-                                    <option value="Reactor">Reactor</option>
-                                    <option value="Condenser">Condenser</option>
-                                    <option value="Tank">Tank</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4 mb-4">
-                                <div>
-                                    <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        Flowrate
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="flowrate"
-                                        value={formData.flowrate}
-                                        onChange={handleChange}
-                                        step="0.01"
-                                        min="0"
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${isDark
-                                            ? 'bg-gray-700 border-gray-600 text-white'
-                                            : 'bg-white border-gray-300 text-gray-900'
-                                            }`}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        Pressure
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="pressure"
-                                        value={formData.pressure}
-                                        onChange={handleChange}
-                                        step="0.01"
-                                        min="0"
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${isDark
-                                            ? 'bg-gray-700 border-gray-600 text-white'
-                                            : 'bg-white border-gray-300 text-gray-900'
-                                            }`}
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className={`block text-sm font-bold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                        Temperature
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="temperature"
-                                        value={formData.temperature}
-                                        onChange={handleChange}
-                                        step="0.01"
-                                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary ${isDark
-                                            ? 'bg-gray-700 border-gray-600 text-white'
-                                            : 'bg-white border-gray-300 text-gray-900'
-                                            }`}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {error && (
-                                <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-                                    {error}
-                                </div>
-                            )}
-
-                            <div className="flex gap-3">
-                                <button
-                                    type="button"
-                                    onClick={onClose}
-                                    className={`flex-1 px-4 py-2 border rounded-md transition ${isDark
-                                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-800 transition disabled:opacity-50"
-                                >
-                                    {saving ? 'Saving...' : 'Save Changes'}
-                                </button>
-                            </div>
-                        </form>
+                        <div>
+                            <label className="block text-gray-700 text-sm font-bold mb-2">
+                                Temperature
+                            </label>
+                            <input
+                                type="number"
+                                name="temperature"
+                                value={formData.temperature}
+                                onChange={handleChange}
+                                step="0.01"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                                required
+                            />
+                        </div>
                     </div>
-                </div>
-            )}
-        </>
+
+                    {error && (
+                        <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                            {error}
+                        </div>
+                    )}
+
+                    <div className="flex gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={saving}
+                            className="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-blue-800 transition disabled:opacity-50"
+                        >
+                            {saving ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     );
 }
 
