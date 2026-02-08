@@ -1,0 +1,209 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* --- DROPDOWN FILTERS STYLING --- */
+    /* Container for all filters */
+    #changelist-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+    }
+
+    /* Hide the default "Filter" title */
+    #changelist-filter h2 {
+        display: none;
+    }
+
+    /* The Filter Group Wrapper (created by JS below) */
+    .filter-group {
+        position: relative;
+        display: inline-block;
+    }
+
+    /* The Filter Button (The Title) */
+    .filter-group h3 {
+        margin: 0;
+        padding: 8px 14px;
+        font-size: 0.875rem;
+        /* 14px */
+        font-weight: 500;
+        color: #374151;
+        /* gray-700 */
+        background-color: white;
+        border: 1px solid #d1d5db;
+        /* gray-300 */
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+
+    /* Hover state for button */
+    .filter-group h3:hover {
+        border-color: #1E40AF;
+        color: #1E40AF;
+        background-color: #eff6ff;
+    }
+
+    /* Dropdown Arrow */
+    .filter-group h3::after {
+        content: "▾";
+        font-size: 0.8em;
+        color: #9ca3af;
+    }
+
+    /* The Dropdown Menu (Hidden by default) */
+    .filter-group ul {
+        display: none;
+        position: absolute;
+        top: 110%;
+        right: 0;
+        /* Align right */
+        min-width: 220px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        padding: 6px;
+        list-style: none;
+        z-index: 50;
+    }
+
+    /* Show dropdown when active */
+    .filter-group.active ul {
+        display: block;
+    }
+
+    /* Dropdown Items */
+    .filter-group li {
+        margin: 0;
+    }
+
+    .filter-group li a {
+        display: block;
+        padding: 8px 12px;
+        font-size: 0.875rem;
+        color: #4b5563;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+
+    .filter-group li a:hover {
+        background-color: #f3f4f6;
+        color: #1E40AF;
+    }
+
+    /* Selected Item styling */
+    .filter-group li.selected a {
+        background-color: #eff6ff;
+        color: #1E40AF;
+        font-weight: 600;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterContainer = document.getElementById('changelist-filter');
+        if (filterContainer) {
+            // Django renders filters as flat <h3>Title</h3> <ul>Links</ul> elements.
+            // We need to wrap each pair in a <div> to make them dropdowns.
+            const children = Array.from(filterContainer.children);
+            let currentWrapper = null;
+
+            children.forEach(child => {
+                if (child.tagName === 'H3') {
+                    // Start a new wrapper for this filter group
+                    currentWrapper = document.createElement('div');
+                    currentWrapper.className = 'filter-group';
+                    filterContainer.insertBefore(currentWrapper, child);
+                    currentWrapper.appendChild(child); // Move h3 inside
+
+                    // Add click toggle
+                    child.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Close all others
+                        document.querySelectorAll('.filter-group').forEach(el => {
+                            if (el !== currentWrapper) el.classList.remove('active');
+                        });
+                        // Toggle current
+                        currentWrapper.classList.toggle('active');
+                    });
+
+                } else if (child.tagName === 'UL' && currentWrapper) {
+                    currentWrapper.appendChild(child); // Move ul inside
+                }
+            });
+
+            // Close dropdowns if clicking anywhere else
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.filter-group').forEach(el => el.classList.remove('active'));
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-[1600px] mx-auto pb-10">
+
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ cl.opts.verbose_name_plural|capfirst }}</h1>
+            <p class="text-sm text-gray-500 mt-1">
+                {{ cl.result_count }}
+                {% if cl.result_count == 1 %}record{% else %}records{% endif %} found
+            </p>
+        </div>
+
+        {% block object-tools %}
+        {% if has_add_permission %}
+        <ul class="object-tools m-0 p-0 list-none">
+            {% block object-tools-items %}
+            <li>
+                {% url cl.opts|admin_urlname:'add' as add_url %}
+                <a href="{% add_preserved_filters add_url is_popup to_field %}"
+                    class="bg-primary hover:bg-blue-800 text-white font-semibold py-2 px-4 rounded-lg shadow-sm text-sm flex items-center gap-2 transition">
+                    <span>+</span> Add {{ cl.opts.verbose_name|capfirst }}
+                </a>
+            </li>
+            {% endblock %}
+        </ul>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-visible">
+
+        <div
+            class="p-4 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gray-50/50">
+
+            <div class="flex-1 max-w-md">
+                {% block search %}{% search_form cl %}{% endblock %}
+            </div>
+
+            {% if cl.has_filters %}
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filter by:</span>
+                <div id="changelist-filter">
+                    {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="overflow-x-auto">
+            {% block result_list %}
+            {% result_list cl %}
+            {% endblock %}
+        </div>
+
+        {% block pagination %}{% pagination cl %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
