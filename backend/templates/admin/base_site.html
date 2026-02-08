@@ -1,0 +1,117 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Portal - CEPV{% endblock %}</title>
+
+    <!-- Django's jQuery (needed for admin functionality) -->
+    <script src="{% static 'admin/js/vendor/jquery/jquery.js' %}"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'admin/css/custom_admin.css' %}">
+
+    {% block extrahead %}{% endblock %}
+    {% block extrastyle %}{% endblock %}
+</head>
+
+<body class="admin-body">
+
+    <!-- TOP NAVIGATION BAR -->
+    <nav class="admin-nav">
+        <div class="nav-container">
+            <div class="nav-left">
+                <div class="logo">
+                    <span class="logo-icon">⚗️</span>
+                    <span class="logo-text">Chemical Equipment Visualizer</span>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                {% if user.is_authenticated %}
+                <span class="nav-user">Welcome, <strong>{{ user.username }}</strong></span>
+                <a href="{% url 'admin:index' %}" class="nav-link">Dashboard</a>
+                <a href="http://localhost:3100/dashboard" target="_blank" class="nav-link">Web App</a>
+                <a href="/api/" target="_blank" class="nav-link">API</a>
+                <form method="post" action="{% url 'admin:logout' %}" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link nav-logout"
+                        style="border: none; background: rgba(239, 68, 68, 0.2); cursor: pointer;">
+                        Logout
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <!-- SIDEBAR -->
+        {% if user.is_authenticated %}
+        <aside class="admin-sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">Data Management</div>
+                <a href="{% url 'admin:api_dataset_changelist' %}"
+                    class="sidebar-link {% if 'dataset' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon">📊</span>
+                    <span>Datasets</span>
+                </a>
+                <a href="{% url 'admin:api_equipment_changelist' %}"
+                    class="sidebar-link {% if 'equipment' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon">⚙️</span>
+                    <span>Equipment</span>
+                </a>
+            </div>
+
+            <div class="sidebar-section">
+                <div class="sidebar-title">User Management</div>
+                <a href="{% url 'admin:auth_user_changelist' %}"
+                    class="sidebar-link {% if 'user' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon">👥</span>
+                    <span>Users</span>
+                </a>
+                <a href="{% url 'admin:auth_group_changelist' %}"
+                    class="sidebar-link {% if 'group' in request.path %}active{% endif %}">
+                    <span class="sidebar-icon">🔐</span>
+                    <span>Groups</span>
+                </a>
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- MAIN CONTENT -->
+        <main class="admin-main">
+            {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                <div class="message message-{{ message.tags }}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block breadcrumbs %}
+            {% if not is_popup %}
+            <div class="breadcrumbs">
+                <a href="{% url 'admin:index' %}">Home</a>
+                {% block breadcrumb_content %}{% endblock %}
+            </div>
+            {% endif %}
+            {% endblock %}
+
+            <div class="content-wrapper">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% block footer %}{% endblock %}
+
+    <script src="{% static 'admin/js/custom_admin.js' %}"></script>
+    {% block extrajs %}{% endblock %}
+</body>
+
+</html>
