@@ -7,6 +7,7 @@ numpy==2.2.2
 reportlab==4.2.5
 Pillow==11.1.0
 python-decouple==3.8
+matplotlib==3.8.2
 
 # Production server packages (for deployment)
 gunicorn==21.2.0
