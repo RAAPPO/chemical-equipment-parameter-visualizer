@@ -142,12 +142,6 @@ export const datasetAPI = {
     });
     return response;
   },
-
-  // NEW: Update equipment parameters
-  updateEquipment: (id, data) => api.put(`/equipment/${id}/`, data),
-
-  // NEW: Delete equipment and trigger stat recalculation
-  deleteEquipment: (id) => api.delete(`/equipment/${id}/`),
 };
 
 export const equipmentAPI = {
