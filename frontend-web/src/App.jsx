@@ -6,7 +6,6 @@ import { Spinner } from './components/LoadingSkeleton';
 
 // Lazy load pages for code splitting
 const Login = lazy(() => import('./pages/Login'));
-const Register = lazy(() => import('./pages/Register'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const DatasetDetail = lazy(() => import('./pages/DatasetDetail'));
 
@@ -42,7 +41,6 @@ function App() {
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} /> 
               <Route
                 path="/dashboard"
                 element={
