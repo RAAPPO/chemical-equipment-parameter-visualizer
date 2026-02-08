@@ -8,7 +8,6 @@ from .views import (
     CSVUploadView,
     health_check,
     download_dataset_pdf,
-    register_user,  # <-- Added this import
 )
 
 # Create router for ViewSets
@@ -23,7 +22,6 @@ urlpatterns = [
     # JWT Authentication
     path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('auth/register/', register_user, name='register'),
     
     # CSV Upload
     path('upload/', CSVUploadView.as_view(), name='csv-upload'),
