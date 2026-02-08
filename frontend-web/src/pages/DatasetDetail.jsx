@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { datasetAPI, equipmentAPI } from '../services/api';
-import EditEquipmentModal from '../components/EditEquipmentModal';
-import AdvancedCharts from '../components/AdvancedCharts'; // ADDED IMPORT
-import { exportEquipmentAsExcel } from '../utils/chartExport'; // ADDED IMPORT
+import EditEquipmentModal from '../components/EditEquipmentModal'; // ADDED IMPORT
 import {
   Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale,
   LinearScale, BarElement, Title, PointElement, LineElement
@@ -23,7 +21,7 @@ export default function DatasetDetail() {
   const [loading, setLoading] = useState(true);
 
   // UX State
-  const [activeView, setActiveView] = useState('safety'); // safety | distribution | correlation | data | charts
+  const [activeView, setActiveView] = useState('safety'); // safety | distribution | correlation | data
   const [typeFilter, setTypeFilter] = useState('All'); // Global Filter
   const [isDark, setIsDark] = useState(false);
 
@@ -67,7 +65,7 @@ export default function DatasetDetail() {
     } catch (e) { alert('Download failed'); }
   }, [id]);
 
-  // --- HANDLERS FOR EDIT/DELETE ---
+  // --- ADDED HANDLERS FOR EDIT/DELETE ---
 
   const handleEditEquipment = (item) => {
     setEditingEquipment(item);
@@ -77,6 +75,7 @@ export default function DatasetDetail() {
   const handleSaveEquipment = async (equipmentId, formData) => {
     try {
       await datasetAPI.updateEquipment(equipmentId, formData);
+      // Refresh all data to update KPIs and Charts
       await loadData();
       alert('Equipment updated successfully!');
     } catch (error) {
@@ -92,6 +91,7 @@ export default function DatasetDetail() {
 
     try {
       await datasetAPI.deleteEquipment(equipmentId);
+      // Refresh all data
       await loadData();
       alert('Equipment deleted successfully!');
     } catch (error) {
@@ -243,13 +243,6 @@ export default function DatasetDetail() {
               <span className="mr-2">{v.icon}</span>{v.label}
             </button>
           ))}
-          {/* Add this in your tab navigation */}
-          <button
-            className={`px-4 py-2 ${activeView === 'charts' ? 'border-b-2 border-primary text-primary font-bold' : 'text-gray-600'}`}
-            onClick={() => setActiveView('charts')}
-          >
-            📊 Advanced Charts
-          </button>
         </div>
 
         <div className="flex items-center gap-3">
@@ -280,32 +273,6 @@ export default function DatasetDetail() {
 
       {/* --- MAIN STAGE --- */}
       <main className="flex-1 p-6 overflow-hidden flex flex-col">
-        {/* ADD TAB CONTENT */}
-        {activeView === 'charts' && dataset && (
-          <div className="p-6 overflow-auto">
-            <div className="mb-6 flex justify-end">
-              <button
-                onClick={() => exportEquipmentAsExcel(equipment, `${dataset.filename}_data.csv`)}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center gap-2"
-              >
-                📊 Export to Excel (CSV)
-              </button>
-            </div>
-            <AdvancedCharts
-              equipment={equipment || []}
-              analytics={{
-                avg_flowrate: dataset.avg_flowrate,
-                avg_pressure: dataset.avg_pressure,
-                avg_temperature: dataset.avg_temperature,
-                equipment_type_distribution: equipment?.reduce((acc, eq) => {
-                  acc[eq.equipment_type] = (acc[eq.equipment_type] || 0) + 1;
-                  return acc;
-                }, {}) || {}
-              }}
-            />
-          </div>
-        )}
-
         {activeView === 'data' ? (
           <div className="flex-1 bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col shadow-sm">
             <div className="overflow-auto flex-1">
@@ -328,6 +295,7 @@ export default function DatasetDetail() {
                           ? <span className="text-red-500 font-bold text-xs bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">⚠️ ALERT</span>
                           : <span className="text-green-500 font-bold text-xs bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">OK</span>}
                       </td>
+                      {/* ADDED ACTIONS CELL */}
                       <td className="px-6 py-3">
                         <div className="flex gap-3">
                           <button
@@ -351,76 +319,75 @@ export default function DatasetDetail() {
             </div>
           </div>
         ) : (
-          activeView !== 'charts' && (
-            <div className="grid grid-cols-3 gap-6 h-full min-h-[500px]">
-              <div className="col-span-2 bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col">
-                <h2 className="text-lg font-bold mb-4">
-                  {activeView === 'safety' && 'Process Envelope Analysis'}
-                  {activeView === 'distribution' && 'Equipment Flowrate Ranges'}
-                  {activeView === 'correlation' && 'Multi-Variable Correlation'}
-                </h2>
-                <div className="flex-1 relative">
-                  {activeView === 'safety' && safetyData && <Scatter data={safetyData} options={commonOptions} />}
-                  {activeView === 'distribution' && distributionData && <Bar data={distributionData} options={{ ...commonOptions, indexAxis: 'y' }} />}
-                  {activeView === 'correlation' && correlationData && <Bubble data={correlationData} options={commonOptions} />}
-                </div>
+          <div className="grid grid-cols-3 gap-6 h-full min-h-[500px]">
+            <div className="col-span-2 bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm flex flex-col">
+              <h2 className="text-lg font-bold mb-4">
+                {activeView === 'safety' && 'Process Envelope Analysis'}
+                {activeView === 'distribution' && 'Equipment Flowrate Ranges'}
+                {activeView === 'correlation' && 'Multi-Variable Correlation'}
+              </h2>
+              <div className="flex-1 relative">
+                {activeView === 'safety' && safetyData && <Scatter data={safetyData} options={commonOptions} />}
+                {activeView === 'distribution' && distributionData && <Bar data={distributionData} options={{ ...commonOptions, indexAxis: 'y' }} />}
+                {activeView === 'correlation' && correlationData && <Bubble data={correlationData} options={commonOptions} />}
               </div>
+            </div>
 
-              <div className="bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm overflow-y-auto">
-                <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Insights</h3>
-                {activeView === 'safety' && (
-                  <div className="space-y-3">
-                    {filteredAnalytics.outlier_equipment.length === 0 ? (
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-bold text-center">✅ All Systems Nominal</div>
-                    ) : (
-                      filteredAnalytics.outlier_equipment.map((eq, i) => (
-                        <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm">
-                          <div className="font-bold text-red-900 dark:text-red-200">{eq.name}</div>
-                          <div className="text-red-600 dark:text-red-400 text-xs">Parameter Excursion Detected</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+            <div className="bg-white dark:bg-darkcard rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm overflow-y-auto">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Live Insights</h3>
+              {activeView === 'safety' && (
+                <div className="space-y-3">
+                  {filteredAnalytics.outlier_equipment.length === 0 ? (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-lg font-bold text-center">✅ All Systems Nominal</div>
+                  ) : (
+                    filteredAnalytics.outlier_equipment.map((eq, i) => (
+                      <div key={i} className="p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm">
+                        <div className="font-bold text-red-900 dark:text-red-200">{eq.name}</div>
+                        <div className="text-red-600 dark:text-red-400 text-xs">Parameter Excursion Detected</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
 
-                {activeView === 'distribution' && (
-                  <div className="space-y-4">
-                    <div className="h-48"><Pie data={{
-                      labels: Object.keys(filteredAnalytics.equipment_type_distribution),
-                      datasets: [{ data: Object.values(filteredAnalytics.equipment_type_distribution), backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B'] }]
-                    }} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
-                    <div className="text-sm space-y-2">
-                      {Object.entries(filteredAnalytics.equipment_type_distribution).map(([k, v]) => (
-                        <div key={k} className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
-                          <span className="font-bold">{k}</span><span className="text-slate-500">{v} Units</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {activeView === 'correlation' && analytics.correlation_matrix && (
-                  <div className="space-y-1">
-                    {analytics.correlation_matrix.map(row => (
-                      <div key={row.variable} className="text-xs">
-                        <div className="font-bold uppercase mb-1">{row.variable} vs:</div>
-                        <div className="grid grid-cols-3 gap-1 mb-3">
-                          {['flowrate', 'pressure', 'temperature'].map(m => (
-                            <div key={m} className={`p-2 rounded text-center font-mono ${Math.abs(row[m]) > 0.7 ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                              {row[m]}
-                            </div>
-                          ))}
-                        </div>
+              {activeView === 'distribution' && (
+                <div className="space-y-4">
+                  <div className="h-48"><Pie data={{
+                    labels: Object.keys(filteredAnalytics.equipment_type_distribution),
+                    datasets: [{ data: Object.values(filteredAnalytics.equipment_type_distribution), backgroundColor: ['#6366F1', '#3B82F6', '#10B981', '#F59E0B'] }]
+                  }} options={{ maintainAspectRatio: false, plugins: { legend: { display: false } } }} /></div>
+                  <div className="text-sm space-y-2">
+                    {Object.entries(filteredAnalytics.equipment_type_distribution).map(([k, v]) => (
+                      <div key={k} className="flex justify-between border-b border-slate-100 dark:border-slate-700 pb-1">
+                        <span className="font-bold">{k}</span><span className="text-slate-500">{v} Units</span>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
+
+              {activeView === 'correlation' && analytics.correlation_matrix && (
+                <div className="space-y-1">
+                  {analytics.correlation_matrix.map(row => (
+                    <div key={row.variable} className="text-xs">
+                      <div className="font-bold uppercase mb-1">{row.variable} vs:</div>
+                      <div className="grid grid-cols-3 gap-1 mb-3">
+                        {['flowrate', 'pressure', 'temperature'].map(m => (
+                          <div key={m} className={`p-2 rounded text-center font-mono ${Math.abs(row[m]) > 0.7 ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 font-bold' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                            {row[m]}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )
+          </div>
         )}
       </main>
 
+      {/* --- ADDED EDIT MODAL --- */}
       <EditEquipmentModal
         equipment={editingEquipment}
         isOpen={showEditModal}
