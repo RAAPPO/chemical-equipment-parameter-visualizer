@@ -210,7 +210,7 @@ export default function DatasetDetail() {
               <h1 className="text-xl font-bold">{dataset.filename}</h1>
               <div className="h-6 w-px bg-white/30"></div>
               <span className="text-white/80 text-sm">
-                Uploaded at: {new Date(dataset.uploaded_at).toLocaleDateString('en-GB')}
+                {new Date(dataset.uploaded_at).toLocaleDateString('en-GB')}
               </span>
               <div className="h-6 w-px bg-white/30"></div>
               <span className="text-white/80 text-sm font-semibold">
