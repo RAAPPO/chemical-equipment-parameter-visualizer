@@ -411,7 +411,7 @@ For detailed testing results, see [TESTING.md](TESTING.md)
 ### Production URLs
 - **🌐 Web Application:** https://cepv.raappo.cf
 - **🔌 API Backend:** https://api-cepv.raappo.cf
-- **📊 API Documentation:** https://api-cepv.raappo.cf/admin/
+- **📊 Django Admin:** https://api-cepv.raappo.cf/admin/
 
 ### Demo Credentials
 - **Username:** `testuser`
