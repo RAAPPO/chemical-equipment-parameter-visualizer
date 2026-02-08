@@ -1,0 +1,112 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    /* Styling for the Filter Sidebar */
+    #changelist-filter h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1rem;
+    }
+
+    #changelist-filter h3 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #4b5563;
+        margin-top: 1rem;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+    }
+
+    #changelist-filter ul {
+        padding-left: 0;
+    }
+
+    #changelist-filter li {
+        list-style: none;
+        margin-bottom: 0.25rem;
+    }
+
+    #changelist-filter a {
+        color: #4b5563;
+        text-decoration: none;
+        font-size: 0.875rem;
+        display: block;
+        padding: 2px 0;
+    }
+
+    #changelist-filter a:hover {
+        color: #1E40AF;
+    }
+
+    #changelist-filter li.selected a {
+        color: #1E40AF;
+        font-weight: 700;
+        border-left: 3px solid #1E40AF;
+        padding-left: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto pb-10">
+
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div class="flex-1 max-w-lg">
+            {% block search %}{% search_form cl %}{% endblock %}
+        </div>
+
+        {% block object-tools %}
+        {% if has_add_permission %}
+        <ul class="object-tools m-0 p-0 list-none">
+            {% block object-tools-items %}
+            <li>
+                {% url cl.opts|admin_urlname:'add' as add_url %}
+                <a href="{% add_preserved_filters add_url is_popup to_field %}"
+                    class="inline-flex items-center justify-center px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow transition-colors no-underline">
+                    + Add {{ cl.opts.verbose_name|capfirst }}
+                </a>
+            </li>
+            {% endblock %}
+        </ul>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6 items-start">
+
+        <div class="flex-1 w-full bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            {% if cl.formset and cl.formset.errors %}
+            <p class="errornote p-4 bg-red-50 text-red-600 border-b border-red-100">
+                {% if cl.formset.total_error_count == 1 %}Please correct the error below.{% else %}Please correct the
+                errors below.{% endif %}
+            </p>
+            {{ cl.formset.non_form_errors }}
+            {% endif %}
+
+            <div class="overflow-x-auto">
+                {% block result_list %}
+                {% result_list cl %}
+                {% endblock %}
+            </div>
+
+            {% block pagination %}{% pagination cl %}{% endblock %}
+        </div>
+
+        {% if cl.has_filters %}
+        <div class="w-full lg:w-72 flex-shrink-0">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200 sticky top-6">
+                <div id="changelist-filter">
+                    <h2>Filter By</h2>
+                    {% for spec in cl.filter_specs %}{% admin_list_filter cl spec %}{% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

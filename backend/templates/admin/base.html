@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ LANGUAGE_CODE|default:" en-us" }}" {% if LANGUAGE_BIDI %}dir="rtl" {% endif %}>
 
 <head>
     <title>{% block title %}{% endblock %}</title>
@@ -8,87 +8,58 @@
     {% block extrahead %}{% endblock %}
 </head>
 
-<body class="bg-gray-100 text-gray-800 antialiased min-h-screen flex flex-col">
+<body class="bg-gray-100 text-gray-800 antialiased" data-admin-utc-offset="{% now " Z" %}">
 
-    <header class="bg-primary text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header class="bg-primary text-white py-4 px-6 shadow-md">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <a href="{% url 'admin:index' %}"
+                class="text-xl font-bold text-white hover:text-gray-200 transition flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
+                    </path>
+                </svg>
+                Chemical Admin
+            </a>
 
-            <div class="flex items-center gap-8">
-                <a href="{% url 'admin:index' %}"
-                    class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    Chemical Admin
-                </a>
-
-                <nav class="hidden md:flex items-center space-x-1">
-                    <a href="{% url 'admin:index' %}"
-                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition text-white">
-                        Dashboard
-                    </a>
-                    <a href="/admin/api/dataset/"
-                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition text-blue-100 hover:text-white">
-                        Datasets
-                    </a>
-                    <a href="/admin/api/equipment/"
-                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition text-blue-100 hover:text-white">
-                        Equipment
-                    </a>
-                    <a href="/admin/auth/user/"
-                        class="px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-800 transition text-blue-100 hover:text-white">
-                        Users
-                    </a>
-                </nav>
-            </div>
-
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-6">
                 {% if user.is_active and user.is_staff %}
-                <span class="text-sm font-medium hidden sm:block text-blue-100">
-                    Welcome, <strong class="text-white">{{ user.username }}</strong>
-                </span>
-
-                <div class="h-6 w-px bg-blue-800 mx-2"></div>
-
+                <span class="text-sm font-medium">Hello, {{ user.username }}</span>
                 <a href="{% url 'admin:logout' %}"
-                    class="bg-red-600 px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold text-sm text-white shadow-sm">
+                    class="bg-red-600/90 hover:bg-red-600 px-4 py-2 rounded-lg text-sm font-bold text-white transition shadow-sm">
                     Logout
                 </a>
                 {% else %}
-                <a href="{% url 'admin:login' %}" class="text-white font-medium hover:text-blue-200">Login</a>
+                <a href="{% url 'admin:login' %}" class="text-white font-medium">Login</a>
                 {% endif %}
             </div>
         </div>
     </header>
 
     {% if not is_popup %}
-    <div class="bg-white border-b border-gray-200 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
-            <a href="{% url 'admin:index' %}" class="hover:text-primary transition flex items-center gap-1">
+    <div class="bg-white border-b border-gray-200 shadow-sm mb-6">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center text-sm text-gray-600">
+            <a href="{% url 'admin:index' %}" class="hover:text-primary font-medium flex items-center gap-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-                    </path>
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
-                Home
+                Back to Dashboard
             </a>
-            {% block breadcrumbs %}{% endblock %}
+            <span class="mx-3 text-gray-300">|</span>
+            {% block breadcrumbs %}
+            {% endblock %}
         </div>
     </div>
     {% endif %}
 
-    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
-
+    <div class="container mx-auto px-4 pb-12" id="main">
         {% block messages %}
         {% if messages %}
-        <div class="mb-6 space-y-2">
+        <div class="max-w-7xl mx-auto mb-6">
             {% for message in messages %}
-            <div class="p-4 rounded-lg text-white font-medium shadow-sm flex items-center gap-3
-                    {% if message.tags == 'success' %}bg-green-600
-                    {% elif message.tags == 'error' %}bg-red-600
-                    {% else %}bg-blue-600{% endif %}">
-                <span>
-                    {% if message.tags == 'success' %}✓
-                    {% elif message.tags == 'error' %}⚠
-                    {% else %}ℹ{% endif %}
-                </span>
+            <div
+                class="p-4 mb-2 rounded-lg text-white font-medium shadow-sm {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% else %}bg-blue-600{% endif %}">
                 {{ message|capfirst }}
             </div>
             {% endfor %}
@@ -98,7 +69,6 @@
 
         <div id="content" class="{% block coltype %}colM{% endblock %}">
             {% block pretitle %}{% endblock %}
-
             {% block content_title %}
             {% if title %}
             <h1 class="text-3xl font-bold text-gray-900 mb-6">{{ title }}</h1>
@@ -111,16 +81,11 @@
             {% endblock %}
 
             {% block sidebar %}{% endblock %}
+            <br class="clear">
         </div>
-    </main>
+    </div>
 
-    <footer class="bg-white border-t border-gray-200 mt-auto py-6">
-        <div class="max-w-7xl mx-auto px-4 text-center text-sm text-gray-500">
-            &copy; {% now "Y" %} Chemical Equipment Visualizer. Admin Portal.
-        </div>
-    </footer>
-
-    {% block footer %}{% endblock %}
+    {% block footer %}<div id="footer"></div>{% endblock %}
 
 </body>
 
