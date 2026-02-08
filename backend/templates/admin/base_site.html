@@ -1,6 +1,6 @@
 {% extends "admin/base.html" %}
 
-{% block title %}Chemical Admin{% endblock %}
+{% block title %}Chemical Equipment Admin{% endblock %}
 
 {% block extrahead %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,11 +18,12 @@
                     sans: ['Inter', 'sans-serif'],
                 },
                 colors: {
-                    primary: '#1E40AF', // Your exact blue
+                    // EXACT colors from your frontend-web tailwind.config.js
+                    primary: '#1E40AF',
                     darkbg: '#0F172A',
                     darkcard: '#1E293B',
-                    danger: '#DC2626',
-                    success: '#16A34A',
+                    // Default Django admin override colors
+                    'django-bg': '#f3f4f6',
                 }
             }
         }
@@ -30,22 +31,44 @@
 </script>
 
 <style>
+    /* Apply Inter font globally */
     body {
         font-family: 'Inter', sans-serif;
         background-color: #f3f4f6;
+        /* Match frontend body color */
     }
 
-    /* Hide Default Django Header completely */
+    /* Hide standard Django header branding to replace with ours */
     #header {
-        display: none !important;
+        display: none;
     }
 
-    /* Fix Django's hidden fields */
-    .hidden {
-        display: none;
+    /* Clean up the breadcrumbs to look like a modern nav path */
+    div.breadcrumbs {
+        background: transparent;
+        color: #6b7280;
+        padding: 1rem 2rem;
+        font-size: 0.875rem;
+        border: none;
+    }
+
+    div.breadcrumbs a {
+        color: #1E40AF;
+        /* Primary Color */
+        font-weight: 500;
+        text-decoration: none;
+    }
+
+    /* Main container spacing */
+    #content {
+        padding: 2rem;
+        max-width: 1280px;
+        margin: 0 auto;
     }
 </style>
 {% endblock %}
 
-{% block branding %}{% endblock %}
+{% block branding %}
+{% endblock %}
+
 {% block nav-global %}{% endblock %}
