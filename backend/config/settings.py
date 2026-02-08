@@ -24,6 +24,9 @@ ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv(
 # --- APPLICATION DEFINITION ---
 
 INSTALLED_APPS = [
+    'unfold',
+    'unfold.contrib.filters',
+    'unfold.contrib.forms',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -127,9 +130,9 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Static files configuration
-#STATICFILES_DIRS = [
-#    os.path.join(BASE_DIR, 'static'),
-#]
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
 
 # For custom admin styling
 STATICFILES_FINDERS = [
@@ -203,3 +206,29 @@ if not DEBUG:
 # --- DEFAULTS ---
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+UNFOLD = {
+    "SITE_TITLE": "Chemical Equipment Parameter Visualizer",
+    "SITE_HEADER": "Chemical Equipment Parameter Visualizer",
+    "SITE_URL": "/",
+    
+    "COLORS": {
+        "primary": {
+            "50": "#EFF6FF",
+            "100": "#DBEAFE",
+            "200": "#BFDBFE",
+            "300": "#93C5FD",
+            "400": "#60A5FA",
+            "500": "#3B82F6",
+            "600": "#2563EB",
+            "700": "#1D4ED8",
+            "800": "#1E40AF",  # YOUR PRIMARY COLOR
+            "900": "#1E3A8A",  # YOUR PRIMARY HOVER
+            "950": "#172554",
+        },
+    },
+    
+    "STYLES": [
+        lambda request: "/static/admin/css/custom_admin.css",
+    ],
+}
