@@ -11,66 +11,24 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 )
 
-# ADDED IMPORTS
-import matplotlib
-matplotlib.use('Agg')  # Non-interactive backend
-import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
-
 from .models import Dataset
 
 # Initialize logger
 logger = logging.getLogger(__name__)
 
-# NEW FUNCTION: create_chart_image
-def create_chart_image(chart_type, data, title):
-    """
-    Generate matplotlib chart and return as PNG BytesIO
-    
-    Args:
-        chart_type: 'bar', 'pie', 'scatter', 'box'
-        data: dict with chart data
-        title: Chart title
-    
-    Returns:
-        BytesIO: PNG image buffer
-    """
-    fig, ax = plt.subplots(figsize=(6, 4), dpi=100)
-    
-    if chart_type == 'bar':
-        ax.bar(data['labels'], data['values'], color='#3B82F6')
-        ax.set_ylabel(data.get('ylabel', 'Value'))
-        
-    elif chart_type == 'pie':
-        ax.pie(data['values'], labels=data['labels'], autopct='%1.1f%%', 
-               colors=['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'])
-        
-    elif chart_type == 'scatter':
-        ax.scatter(data['x'], data['y'], alpha=0.6, c='#3B82F6', s=50)
-        ax.set_xlabel(data.get('xlabel', 'X'))
-        ax.set_ylabel(data.get('ylabel', 'Y'))
-        ax.grid(True, alpha=0.3)
-        
-    elif chart_type == 'box':
-        ax.boxplot(data['values'], labels=data['labels'])
-        ax.set_ylabel(data.get('ylabel', 'Value'))
-        ax.grid(True, alpha=0.3, axis='y')
-    
-    ax.set_title(title, fontsize=14, fontweight='bold', color='#1E3A8A')
-    plt.tight_layout()
-    
-    # Save to BytesIO
-    img_buffer = BytesIO()
-    plt.savefig(img_buffer, format='png', bbox_inches='tight', dpi=100)
-    img_buffer.seek(0)
-    plt.close(fig)
-    
-    return img_buffer
-
 def generate_dataset_pdf(dataset_id):
     """
     Generate a comprehensive PDF report for a dataset.
+    
+    Args:
+        dataset_id: UUID of the dataset
+        
+    Returns:
+        BytesIO: PDF file buffer
+        
+    Raises:
+        ValueError: If dataset not found
+        Exception: If PDF generation fails
     """
     try:
         # Get dataset and equipment with prefetch to optimize DB hits
@@ -156,102 +114,78 @@ def generate_dataset_pdf(dataset_id):
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ]))
         
-        # ENHANCEMENTS START HERE
         elements.append(summary_table)
         elements.append(Spacer(1, 0.3 * inch))
         
-        # ============ NEW: EQUIPMENT TYPE DISTRIBUTION CHART ============
+        # Equipment Type Distribution
         elements.append(Paragraph("Equipment Type Distribution", heading_style))
         
-        # Get type distribution
-        type_dist = {}
+        type_counts = {}
         for eq in equipment_list:
-            eq_type = eq.equipment_type
-            type_dist[eq_type] = type_dist.get(eq_type, 0) + 1
+            type_counts[eq.equipment_type] = type_counts.get(eq.equipment_type, 0) + 1
         
-        if type_dist:
-            pie_data = {
-                'labels': list(type_dist.keys()),
-                'values': list(type_dist.values())
-            }
-            pie_chart = create_chart_image('pie', pie_data, 'Equipment Types')
-            elements.append(Image(pie_chart, width=4*inch, height=3*inch))
-            elements.append(Spacer(1, 0.3 * inch))
+        dist_data = [['Equipment Type', 'Count', 'Percentage']]
+        for eq_type, count in sorted(type_counts.items()):
+            percentage = (count / dataset.total_equipment) * 100
+            dist_data.append([eq_type, str(count), f"{percentage:.1f}%"])
         
-        # ============ NEW: PARAMETER COMPARISON BAR CHART ============
-        elements.append(Paragraph("Average Parameters Comparison", heading_style))
+        dist_table = Table(dist_data, colWidths=[2.5 * inch, 1.5 * inch, 1.5 * inch])
+        dist_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E3A8A')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.lightblue),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ]))
         
-        bar_data = {
-            'labels': ['Flowrate', 'Pressure', 'Temperature'],
-            'values': [dataset.avg_flowrate, dataset.avg_pressure, dataset.avg_temperature],
-            'ylabel': 'Average Value'
-        }
-        bar_chart = create_chart_image('bar', bar_data, 'Average Parameters')
-        elements.append(Image(bar_chart, width=5*inch, height=3*inch))
+        elements.append(dist_table)
         elements.append(Spacer(1, 0.3 * inch))
         
-        # ============ NEW: PRESSURE VS TEMPERATURE SCATTER PLOT ============
-        elements.append(Paragraph("Pressure-Temperature Correlation", heading_style))
+        # Outlier Detection Section
+        outliers = equipment_list.filter(
+            is_pressure_outlier=True
+        ) | equipment_list.filter(
+            is_temperature_outlier=True
+        )
         
-        pressures = [eq.pressure for eq in equipment_list]
-        temperatures = [eq.temperature for eq in equipment_list]
+        elements.append(Paragraph("Outlier Detection (Z-score > 2)", heading_style))
         
-        scatter_data = {
-            'x': pressures,
-            'y': temperatures,
-            'xlabel': 'Pressure (bar)',
-            'ylabel': 'Temperature (°C)'
-        }
-        scatter_chart = create_chart_image('scatter', scatter_data, 'Pressure vs Temperature')
-        elements.append(Image(scatter_chart, width=5*inch, height=3*inch))
-        elements.append(Spacer(1, 0.3 * inch))
-        
-        # ============ NEW: OUTLIER ANALYSIS SECTION ============
-        outliers = [eq for eq in equipment_list if eq.is_pressure_outlier or eq.is_temperature_outlier]
-        
-        if outliers:
-            elements.append(Paragraph("⚠️ Outlier Analysis", heading_style))
-            
-            outlier_text = f"Found {len(outliers)} equipment with abnormal readings:"
-            elements.append(Paragraph(outlier_text, styles['Normal']))
-            elements.append(Spacer(1, 0.1 * inch))
-            
-            outlier_data = [['Equipment', 'Type', 'Pressure', 'Temperature', 'Status']]
-            for eq in outliers[:10]:  # Limit to 10
-                status = []
-                if eq.is_pressure_outlier:
-                    status.append('P-Outlier')
-                if eq.is_temperature_outlier:
-                    status.append('T-Outlier')
-                
+        if outliers.exists():
+            outlier_data = [['Equipment', 'Type', 'Pressure Outlier', 'Temp Outlier']]
+            for eq in outliers.distinct():
                 outlier_data.append([
                     eq.equipment_name,
                     eq.equipment_type,
-                    f"{eq.pressure:.2f}",
-                    f"{eq.temperature:.2f}",
-                    ', '.join(status)
+                    '⚠️ YES' if eq.is_pressure_outlier else 'No',
+                    '⚠️ YES' if eq.is_temperature_outlier else 'No',
                 ])
             
-            outlier_table = Table(outlier_data, colWidths=[1.5*inch, 1.2*inch, 0.9*inch, 1*inch, 1.4*inch])
+            outlier_table = Table(outlier_data, colWidths=[2 * inch, 1.5 * inch, 1.5 * inch, 1.5 * inch])
             outlier_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#EF4444')),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#DC2626')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                 ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#FEE2E2')),
-                ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#DC2626'))
+                ('FONTSIZE', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.lightpink),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ]))
+            
             elements.append(outlier_table)
-            elements.append(Spacer(1, 0.3 * inch))
         else:
-            elements.append(Paragraph("✅ No outliers detected.", styles['Normal']))
-            elements.append(Spacer(1, 0.3 * inch))
-
-        # ============ CONTINUE WITH EXISTING EQUIPMENT TABLE ============
+            elements.append(Paragraph(
+                "✅ No outliers detected. All equipment parameters are within normal range.",
+                styles['Normal']
+            ))
+        
+        elements.append(Spacer(1, 0.3 * inch))
+        
+        # Detailed Equipment List (on new page)
         elements.append(PageBreak())
-        elements.append(Paragraph("Complete Equipment Data", heading_style))
+        elements.append(Paragraph("Detailed Equipment List", heading_style))
         
         equipment_data = [['Name', 'Type', 'Flowrate', 'Pressure', 'Temp']]
         for eq in equipment_list:
