@@ -37,10 +37,10 @@ A full-stack hybrid application that enables chemical engineers to upload, analy
 │   React Web Frontend    │         │  PyQt5 Desktop Client   │
 │   + Vite + TailwindCSS  │         │  + Matplotlib Charts    │
 │   + Chart.js Graphs     │         │  + Native UI            │
-│   Port: 5173            │         │  Standalone App         │
+│   Port: 3100            │         │  Standalone App         │
 └────────────┬────────────┘         └────────────┬────────────┘
-             │                                    │
-             └─────────────┬──────────────────────┘
+             │                                   │
+             └─────────────┬─────────────────────┘
                            │ 
                     REST API (JWT Auth)
                            │
